@@ -1,0 +1,120 @@
+
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vantage AI - Intelligence Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Space Grotesk', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+            }
+          }
+        }
+      }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+      
+      :root {
+        /* Dark mode defaults */
+        --primary: #22d3ee;
+        --secondary: #d946ef;
+        --bg-main: radial-gradient(circle at 20% 20%, #1a0b2e 0%, #2d0b21 40%, #020617 100%);
+        --bg-card: rgba(30, 10, 50, 0.4);
+        --bg-glass: rgba(15, 5, 30, 0.7);
+        --text-base: #f8fafc;
+        --text-dim: #94a3b8;
+        --border-color: rgba(255, 255, 255, 0.1);
+        --glow: 0 0 25px rgba(34, 211, 238, 0.15);
+        --card-shadow: 0 15px 35px -12px rgba(0, 0, 0, 0.6);
+      }
+      
+      /* Light mode: High Contrast & Tech/Clean Look */
+      
+      html:not(.dark) {
+        --primary: #0284c7; /* Sky 600 */
+        --secondary: #7c3aed; /* Violet 600 */
+        --bg-main: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+        --bg-card: #ffffff;
+        --bg-glass: rgba(255, 255, 255, 0.85);
+        --text-base: #0f172a; /* Slate 900 */
+        --text-dim: #475569; /* Slate 600 */
+        --border-color: #cbd5e1; /* Slate 300 */
+        --glow: 0 0 15px rgba(2, 132, 199, 0.1);
+        --card-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.1);
+      }
+      
+      body {
+        font-family: 'Space Grotesk', sans-serif;
+        background: var(--bg-main);
+        background-attachment: fixed;
+        color: var(--text-base);
+        transition: color 0.3s ease, background 0.3s ease;
+        overflow-x: hidden;
+      }
+      
+      .mono { font-family: 'JetBrains Mono', monospace; }
+      
+      .glass {
+        background: var(--bg-glass);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--card-shadow);
+        transition: all 0.3s ease;
+      }
+      
+      .glow-text {
+        background: linear-gradient(to right, var(--primary), var(--secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 900;
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+      
+      .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+      
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(128, 128, 128, 0.2);
+        border-radius: 10px;
+      }
+      
+      html:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.1);
+      }
+      
+      @keyframes spin-slow {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      
+      .animate-spin-slow { animation: spin-slow 15s linear infinite; }
+    </style>
+
+<link rel="stylesheet" href="/index.css">
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "recharts": "https://esm.sh/recharts@^3.7.0",
+    "react-sparklines": "https://esm.sh/react-sparklines@^1.7.0"
+  }
+}
+</script>
+  <script type="module" crossorigin src="/assets/index-C4RiljK6.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+</body>
+</html>
