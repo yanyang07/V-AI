@@ -1,0 +1,7 @@
+{
+  "name": " AI - Global Tech Intelligence 单色可用版本",
+  "description": "A high-tech, sci-fi inspired dashboard for tracking technology trends, scholar networks, and academic breakthroughs with interactive visualization and deep-search capabilities.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
