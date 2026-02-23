@@ -27,24 +27,27 @@ async function fetchJSON<T>(path: string): Promise<T> {
 
 // ─── 公开API ─────────────────────────────────────────────────────────────────
 
+// import.meta.env.BASE_URL = "/" (dev) 或 "/V-AI/" (GitHub Pages)
+const base = import.meta.env.BASE_URL.replace(/\/$/, ''); // 去掉末尾斜杠
+
 /** 加载关键词索引（热词列表、heat分数、sparkline） */
 export function loadKeywords(): Promise<KeywordsData> {
-  return fetchJSON<KeywordsData>('/data/keywords.json');
+  return fetchJSON<KeywordsData>(`${base}/data/keywords.json`);
 }
 
 /** 加载论文数据（按关键词分组的论文列表 + 趋势） */
 export function loadPapers(): Promise<PapersData> {
-  return fetchJSON<PapersData>('/data/papers.json');
+  return fetchJSON<PapersData>(`${base}/data/papers.json`);
 }
 
 /** 加载学者数据（top500学者） */
 export function loadScholars(): Promise<ScholarsData> {
-  return fetchJSON<ScholarsData>('/data/scholars.json');
+  return fetchJSON<ScholarsData>(`${base}/data/scholars.json`);
 }
 
 /** 加载新闻数据（按关键词分组的资讯） */
 export function loadNews(): Promise<NewsData> {
-  return fetchJSON<NewsData>('/data/news.json');
+  return fetchJSON<NewsData>(`${base}/data/news.json`);
 }
 
 /** 清空缓存（用于调试或强制刷新） */

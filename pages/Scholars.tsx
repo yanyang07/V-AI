@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { SCHOLARS_MOCK, KEYWORDS_LIST } from '../constants';
+import { KEYWORDS_LIST } from '../constants';
 import { Scholar, SortOption } from '../types';
 import { useScholars } from '../hooks/useData';
 import type { CSVScholar } from '../services/dataTypes';
@@ -572,7 +572,7 @@ export const Scholars: React.FC = () => {
 
   // 将 CSV 数据转换成 Scholar 格式，loading 时退回 mock
   const allScholars = useMemo<Scholar[]>(() => {
-    if (!scholarsData) return SCHOLARS_MOCK;
+    if (!scholarsData) return [];
     const maxPapers = Math.max(1, ...scholarsData.scholars.map(s => s.paperCount));
     return scholarsData.scholars.map((s, i) => csvToScholar(s, i, maxPapers));
   }, [scholarsData]);

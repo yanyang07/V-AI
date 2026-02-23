@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { PAPERS_MOCK, INSTITUTIONS_MOCK, KEYWORDS_LIST } from '../constants';
+import { KEYWORDS_LIST } from '../constants';
 import { Paper, SortOption } from '../types';
 import { usePapers } from '../hooks/useData';
 import type { CSVPaper } from '../services/dataTypes';
@@ -364,7 +364,7 @@ export const Papers: React.FC = () => {
 
   // 将 CSV 数据转换成 Paper 格式
   const allPapers = useMemo<Paper[]>(() => {
-    if (!papersData) return PAPERS_MOCK;
+    if (!papersData) return [];
     const raw = (Object.values(papersData.samplePapers) as CSVPaper[][]).flat();
     const maxHotness = Math.max(1, ...raw.map(p => p.hotness ?? 0));
     return raw.map((p, i) => csvToPaper(p, i, maxHotness));

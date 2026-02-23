@@ -1,6 +1,5 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { SCHOLARS_MOCK, PAPERS_MOCK } from '../constants';
 import { Scholar, Paper, SortOption } from '../types';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { useScholars, usePapers } from '../hooks/useData';
@@ -325,7 +324,7 @@ export const Search: React.FC = () => {
 
   // Build scholar list from real CSV data
   const allScholars = useMemo<Scholar[]>(() => {
-    if (!scholarsData) return SCHOLARS_MOCK;
+    if (!scholarsData) return [];
     const maxPapers = Math.max(1, ...scholarsData.scholars.map(s => s.paperCount));
     return scholarsData.scholars.map((s, i) => csvToSearchScholar(s, i, maxPapers));
   }, [scholarsData]);
@@ -408,7 +407,7 @@ export const Search: React.FC = () => {
 
   // Build papers list from real data
   const allPapers = useMemo<Paper[]>(() => {
-    if (!papersData) return PAPERS_MOCK;
+    if (!papersData) return [];
     return (Object.values(papersData.samplePapers) as any[][]).flat().slice(0, 12).map((p: any, i) => ({
       id: p.id || `sp_${i}`,
       title: p.title,

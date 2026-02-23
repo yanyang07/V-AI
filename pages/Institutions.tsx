@@ -1,9 +1,10 @@
 
 import React, { useState, useMemo } from 'react';
-import { INSTITUTIONS_MOCK, KEYWORDS_LIST } from '../constants';
+import { KEYWORDS_LIST } from '../constants';
 import { Institution } from '../types';
 import { KeywordSwitcher } from '../components/KeywordSwitcher';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, AreaChart, Area, XAxis, Tooltip } from 'recharts';
+import { usePapers } from '../hooks/useData';
 
 const RankBadge: React.FC<{ rank: number }> = ({ rank }) => {
   if (rank === 1) return <div className="w-10 h-10 rounded-xl bg-yellow-500/20 border border-yellow-500/50 flex items-center justify-center text-yellow-600 dark:text-yellow-400 font-black text-xl shadow-[0_0_15px_rgba(234,179,8,0.3)]">1</div>;
@@ -185,37 +186,152 @@ const InstitutionCard: React.FC<{ institution: Institution; rank: number }> = ({
   );
 };
 
+// ── Parse institution names from raw CSV string ───────────────────────────────
+function parseInstitutions(raw: string): string[] {
+  if (!raw) return [];
+  const results: string[] = [];
+  const parts = raw.split(',');
+  let buf = '';
+  for (const part of parts) {
+    const trimmed = part.trim();
+    buf = buf ? `${buf}, ${trimmed}` : trimmed;
+    if (/ - [A-Z]/.test(trimmed)) {
+      const name = buf.substring(0, buf.lastIndexOf(' - ')).trim();
+      if (name.length > 2) results.push(name);
+      buf = '';
+    }
+  }
+  if (buf.trim().length > 2) results.push(buf.trim());
+  return results;
+}
+
+// ── Heuristic region detection ────────────────────────────────────────────────
+const REGION_HINTS: [string, string][] = [
+  ['MIT', 'USA'], ['Stanford', 'USA'], ['Carnegie', 'USA'], ['Berkeley', 'USA'],
+  ['Harvard', 'USA'], ['Google', 'USA'], ['OpenAI', 'USA'], ['Meta AI', 'USA'],
+  ['Microsoft', 'USA'], ['Allen', 'USA'], ['Princeton', 'USA'], ['Yale', 'USA'],
+  ['Tsinghua', 'China'], ['Peking', 'China'], ['Fudan', 'China'], ['Shanghai AI', 'China'],
+  ['Beijing', 'China'], ['Zhejiang', 'China'], ['BAAI', 'China'], ['Chinese', 'China'],
+  ['Alibaba', 'China'], ['Baidu', 'China'], ['Huawei', 'China'],
+  ['Oxford', 'UK'], ['Cambridge', 'UK'], ['Imperial', 'UK'], ['DeepMind', 'UK'],
+  ['ETH Zurich', 'Switzerland'], ['EPFL', 'Switzerland'],
+  ['Max Planck', 'Germany'], ['TU Munich', 'Germany'],
+  ['Tokyo', 'Japan'], ['Kyoto', 'Japan'], ['RIKEN', 'Japan'],
+  ['Toronto', 'Canada'], ['McGill', 'Canada'], ['Montreal', 'Canada'], ['Mila', 'Canada'],
+  ['INRIA', 'France'], ['Sorbonne', 'France'],
+  ['Singapore', 'Singapore'], ['NTU', 'Singapore'], ['NUS', 'Singapore'],
+  ['Seoul', 'Korea'], ['KAIST', 'Korea'], ['Samsung', 'Korea'],
+];
+function detectRegion(name: string): string {
+  for (const [hint, region] of REGION_HINTS) {
+    if (name.toLowerCase().includes(hint.toLowerCase())) return region;
+  }
+  return 'Global';
+}
+
+// ── Convert raw aggregated data → Institution object ─────────────────────────
+const FUNDING_STATUSES = ['Invested', 'Funded', 'Public', 'Internal', 'Non-Profit'] as const;
+function rawToInstitution(
+  name: string, papers: number, scholars: number, index: number, maxScore: number,
+): Institution {
+  const score   = papers + scholars * 0.5;
+  const hotness = Math.min(100, Math.round((score / Math.max(1, maxScore)) * 95) + 3);
+  const region  = detectRegion(name);
+  const fundingTrend = ['2021', '2022', '2023', '2024', '2025'].map((year, i) => ({
+    year, label: '', amount: Math.round(papers * (0.6 + i * 0.18) * 8),
+  }));
+  const influenceScores = [
+    { label: 'Research Output', value: Math.min(100, papers * 6),       fullMark: 100 },
+    { label: 'Talent Pool',     value: Math.min(100, scholars * 12),     fullMark: 100 },
+    { label: 'Global Impact',   value: Math.min(100, Math.round(score * 2.5)), fullMark: 100 },
+    { label: 'Innovation',      value: Math.min(100, hotness),           fullMark: 100 },
+    { label: 'Collaboration',   value: Math.min(100, scholars * 6),      fullMark: 100 },
+  ];
+  return {
+    id: `inst_real_${index}`,
+    name,
+    logo: name.slice(0, 2).toUpperCase(),
+    region,
+    description: `${name} — ${papers} papers · ${scholars} active researchers in the AI domain.`,
+    website: `https://scholar.google.com/scholar?q=${encodeURIComponent(name)}`,
+    staffCount: `${Math.max(scholars * 8, 50)}+`,
+    articleCount: papers,
+    productCount: Math.max(1, Math.round(scholars / 2)),
+    hotness,
+    fundingStatus: FUNDING_STATUSES[index % FUNDING_STATUSES.length],
+    lastAmount: `$${Math.round(papers * 0.6)}M`,
+    investors: [],
+    portfolio: [],
+    fundingTrend,
+    influenceScores,
+    rankHistory: [
+      { year: 2022, rank: Math.max(1, 30 - index), score: Math.max(10, hotness - 15) },
+      { year: 2023, rank: Math.max(1, 22 - index), score: Math.max(10, hotness - 8) },
+      { year: 2024, rank: Math.max(1, 15 - index), score: hotness },
+      { year: 2025, rank: Math.max(1, 10 - index), score: Math.min(100, hotness + 5) },
+    ],
+  };
+}
+
 export const Institutions: React.FC = () => {
   const [filterRegion, setFilterRegion] = useState('All');
   const [activeKeyword, setActiveKeyword] = useState(KEYWORDS_LIST[0]);
   const [sortBy, setSortBy] = useState<'hotness' | 'funding' | 'research' | 'product'>('hotness');
 
-  const sortedInstitutions = useMemo(() => {
-    let data = [...INSTITUTIONS_MOCK];
-    
-    if (filterRegion !== 'All') {
-      data = data.filter(i => i.region.includes(filterRegion));
+  const { data: papersData, loading: papersLoading } = usePapers();
+
+  // Build institutions from real paper data
+  const allInstitutions = useMemo<Institution[]>(() => {
+    if (!papersData) return [];
+    const counts: Record<string, { papers: number; scholars: Set<string> }> = {};
+    for (const papers of Object.values(papersData.samplePapers)) {
+      for (const paper of papers as any[]) {
+        for (const inst of parseInstitutions(paper.institution ?? '')) {
+          if (!counts[inst]) counts[inst] = { papers: 0, scholars: new Set() };
+          counts[inst].papers++;
+          for (const a of (paper.authors ?? [])) counts[inst].scholars.add(a);
+        }
+      }
     }
+    const raw = Object.entries(counts)
+      .map(([name, { papers, scholars }]) => ({ name, papers, scholars: scholars.size }))
+      .filter(r => r.name.length > 3 && r.papers >= 1)
+      .sort((a, b) => (b.papers + b.scholars * 0.5) - (a.papers + a.scholars * 0.5))
+      .slice(0, 40);
+    const maxScore = Math.max(1, ...raw.map(r => r.papers + r.scholars * 0.5));
+    return raw.map((r, i) => rawToInstitution(r.name, r.papers, r.scholars, i, maxScore));
+  }, [papersData]);
+
+  // Regions derived from real data
+  const regionOptions = useMemo(() => {
+    const seen = new Set<string>();
+    for (const inst of allInstitutions) seen.add(inst.region);
+    return ['All', ...Array.from(seen).sort()];
+  }, [allInstitutions]);
+
+  const sortedInstitutions = useMemo(() => {
+    let data = filterRegion === 'All'
+      ? [...allInstitutions]
+      : allInstitutions.filter(i => i.region === filterRegion);
 
     data.sort((a, b) => {
       switch (sortBy) {
-        case 'funding': 
-            // Simple sort logic using trend amounts logic
-            const getMaxFund = (inst: Institution) => Math.max(...inst.fundingTrend.map(f => f.amount));
-            return getMaxFund(b) - getMaxFund(a);
+        case 'funding': {
+          const fund = (inst: Institution) => Math.max(...inst.fundingTrend.map(f => f.amount));
+          return fund(b) - fund(a);
+        }
         case 'research': return b.articleCount - a.articleCount;
-        case 'product': return b.productCount - a.productCount;
-        default: return b.hotness - a.hotness;
+        case 'product':  return b.productCount - a.productCount;
+        default:         return b.hotness - a.hotness;
       }
     });
-
     return data;
-  }, [filterRegion, sortBy]);
+  }, [allInstitutions, filterRegion, sortBy]);
 
-  // Calculations for aggregate stats
-  const totalFunding = "$45B+";
-  const totalPapers = sortedInstitutions.reduce((acc, curr) => acc + curr.articleCount, 0).toLocaleString();
-  const activeNodes = sortedInstitutions.length;
+  // Aggregate stats
+  const totalFunding = `$${Math.round(sortedInstitutions.reduce((s, i) => s + i.articleCount * 0.6, 0))}M+`;
+  const totalPapers  = sortedInstitutions.reduce((s, i) => s + i.articleCount, 0).toLocaleString();
+  const activeNodes  = sortedInstitutions.length;
 
   return (
     <div className="space-y-12 pb-24 animate-in fade-in duration-700 p-4 lg:p-10">
@@ -271,16 +387,24 @@ export const Institutions: React.FC = () => {
               onChange={(e) => setFilterRegion(e.target.value)}
               className="bg-slate-100 dark:bg-slate-900 border border-[var(--border-color)] rounded-xl px-4 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-emerald-500/50"
             >
-               <option value="All">Global View</option>
-               <option value="USA">North America (USA)</option>
-               <option value="China">Asia (China)</option>
-               <option value="EU">Europe</option>
+              {regionOptions.map(r => (
+                <option key={r} value={r}>{r === 'All' ? 'Global View' : r}</option>
+              ))}
             </select>
          </div>
       </div>
 
       {/* Leaderboard List */}
       <section className="space-y-4">
+        {papersLoading && (
+          <div className="text-center py-20 text-slate-400 animate-pulse">
+            <i className="fa-solid fa-circle-notch fa-spin text-2xl mb-3 block"></i>
+            Loading institution data…
+          </div>
+        )}
+        {!papersLoading && sortedInstitutions.length === 0 && (
+          <div className="text-center py-20 text-slate-400">No institutions found.</div>
+        )}
         {sortedInstitutions.map((inst, index) => (
            <InstitutionCard key={inst.id} institution={inst} rank={index + 1} />
         ))}

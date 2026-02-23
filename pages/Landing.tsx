@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { PROJECTS_MOCK } from '../constants';
 import { HotWordCategory } from '../types';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { useKeywords, useNews, usePapers } from '../hooks/useData';
