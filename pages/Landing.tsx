@@ -7,6 +7,7 @@ import type { CSVPaper, CSVNews } from '../services/dataTypes';
 
 interface LandingProps {
   setActiveTab: (tab: string) => void;
+  setGlobalKeyword: (kw: string) => void;
 }
 
 const CategoryColorMap: Record<string, string> = {
@@ -67,7 +68,7 @@ const SkeletonCard = () => (
   </div>
 );
 
-export const Landing: React.FC<LandingProps> = ({ setActiveTab }) => {
+export const Landing: React.FC<LandingProps> = ({ setActiveTab, setGlobalKeyword }) => {
   const [query, setQuery] = useState('');
   const [hoveredWordId, setHoveredWordId] = useState<string | null>(null);
 
@@ -116,6 +117,7 @@ export const Landing: React.FC<LandingProps> = ({ setActiveTab }) => {
     : [];
 
   const handleHotWordClick = (word: string) => {
+    setGlobalKeyword(word);   // 同步关键词到 Dashboard
     setActiveTab('home');
   };
 

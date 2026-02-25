@@ -1,11 +1,12 @@
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { TrendChart } from '../components/TrendChart';
 import { KEYWORDS_LIST } from '../constants';
 import { HotWordCategory } from '../types';
 import { ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { useNews, useScholars, usePapers } from '../hooks/useData';
 import type { CSVNews, CSVScholar } from '../services/dataTypes';
+import { KeywordSwitcher } from '../components/KeywordSwitcher';
 
 const CategoryColorMap: Record<HotWordCategory, string> = {
   'Technology': '#06b6d4', 
@@ -143,11 +144,22 @@ function parseInstitutions(raw: string): string[] {
 
 interface HomeProps {
   setActiveTab?: (tab: string) => void;
+  initialKeyword?: string;
+  onKeywordChange?: (kw: string) => void;
 }
 
-export const Home: React.FC<HomeProps> = ({ setActiveTab }) => {
+export const Home: React.FC<HomeProps> = ({ setActiveTab, initialKeyword, onKeywordChange }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [chartMetric, setChartMetric] = useState('compositeIndex');
+  const [activeKeyword, setActiveKeyword] = useState(initialKeyword ?? KEYWORDS_LIST[0]);
+
+  // 当从 Landing 带着新关键词进入时，同步更新本地状态
+  useEffect(() => {
+    if (initialKeyword && initialKeyword !== activeKeyword) {
+      setActiveKeyword(initialKeyword);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialKeyword]);
   const chartRef = useRef<HTMLDivElement>(null);
 
   const { data: newsData, loading: newsLoading } = useNews();
@@ -170,44 +182,47 @@ export const Home: React.FC<HomeProps> = ({ setActiveTab }) => {
     return t.length > 4 && !/^\d+$/.test(t);
   };
 
-  // 社交媒体热议：过滤异常条目后按日期降序排列（可滚动）
+  // 社交媒体热议：按关键词过滤 + 日期降序
   const socialFeed: CSVNews[] = useMemo(
     () => [...(newsData?.news ?? [])]
-      .filter(isValidNews)
+      .filter(n => isValidNews(n) && n.keyword === activeKeyword)
       .sort((a, b) => dateScore(b.date) - dateScore(a.date)),
-    [newsData]
+    [newsData, activeKeyword]
   );
 
-  // 全球核心影响力学者：按论文数降序
-  const topScholars: CSVScholar[] = useMemo(
-    () => (scholarsData?.scholars ?? []).slice(0, 50),
-    [scholarsData]
-  );
+  // 全球核心影响力学者：按关键词过滤 + 论文数降序
+  const topScholars: CSVScholar[] = useMemo(() => {
+    const all = scholarsData?.scholars ?? [];
+    const filtered = all.filter(s =>
+      s.keywords.some((k: string) => k.includes(activeKeyword))
+    );
+    return (filtered.length >= 10 ? filtered : all).slice(0, 50);
+  }, [scholarsData, activeKeyword]);
 
-  // 活跃机构：从 samplePapers 解析机构并按论文数排序
+  // 活跃机构：按关键词的论文过滤后聚合排序
   const institutionRanking = useMemo(() => {
     if (!papersData) return [];
+    const keyPapers = papersData.samplePapers[activeKeyword] as any[] | undefined;
+    const paperList = keyPapers?.length
+      ? keyPapers
+      : (Object.values(papersData.samplePapers) as any[][]).flat();
     const counts: Record<string, { papers: number; scholars: Set<string> }> = {};
-    for (const papers of Object.values(papersData.samplePapers)) {
-      for (const paper of papers) {
-        const institutions = parseInstitutions(paper.institution);
-        for (const inst of institutions) {
-          if (!counts[inst]) counts[inst] = { papers: 0, scholars: new Set() };
-          counts[inst].papers++;
-          for (const author of paper.authors) counts[inst].scholars.add(author);
-        }
+    for (const paper of paperList) {
+      const institutions = parseInstitutions(paper.institution);
+      for (const inst of institutions) {
+        if (!counts[inst]) counts[inst] = { papers: 0, scholars: new Set() };
+        counts[inst].papers++;
+        for (const author of paper.authors) counts[inst].scholars.add(author);
       }
     }
     return Object.entries(counts)
       .map(([name, { papers, scholars }]) => ({
-        name,
-        papers,
-        scholars: scholars.size,
+        name, papers, scholars: scholars.size,
         score: papers * 1 + scholars.size * 0.5,
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 20);
-  }, [papersData]);
+  }, [papersData, activeKeyword]);
 
   const handleFundingClick = () => {
     setChartMetric('funding');
@@ -221,12 +236,15 @@ export const Home: React.FC<HomeProps> = ({ setActiveTab }) => {
       <RelatedWordsDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
 
       {/* Header */}
-      <header className="flex flex-col gap-2">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-8">
-            <h1 className="text-6xl font-black text-[var(--text-base)] tracking-tighter glow-text">Clawd Search</h1>
-            <div 
-              className="flex items-center gap-4 px-6 py-3 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl cursor-pointer group hover:scale-105 transition-all shadow-sm"
+      <header className="flex flex-col gap-4">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+          <div className="flex flex-col gap-3">
+            <div className="relative">
+              <KeywordSwitcher keywords={KEYWORDS_LIST} value={activeKeyword} onChange={(kw) => { setActiveKeyword(kw); onKeywordChange?.(kw); }} accent="cyan" />
+              <p className="text-cyan-600 dark:text-cyan-400 font-bold uppercase tracking-[0.4em] text-[10px] mt-1">Intelligence Dashboard</p>
+            </div>
+            <div
+              className="flex items-center gap-4 px-6 py-3 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl cursor-pointer group hover:scale-105 transition-all shadow-sm w-fit"
               onClick={() => setIsDrawerOpen(true)}
             >
               <i className="fa-solid fa-bolt-lightning text-blue-500 animate-pulse"></i>
