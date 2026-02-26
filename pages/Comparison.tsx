@@ -482,24 +482,32 @@ export const Comparison: React.FC = () => {
     ? institutionEntities
     : scholarEntities;
 
-  // mode 切换或数据加载完成时设置默认选项
+  // region 模式：数据加载完后同步默认选项
   useEffect(() => {
-    if (mode === 'scholar') {
-      setItemA(PINNED_SCHOLAR_DATA[0].name);
-      setItemB(PINNED_SCHOLAR_DATA[1].name);
-      return;
-    }
-    if (mode === 'institution') {
-      setItemA(PINNED_INSTITUTION_DATA[0].name);
-      setItemB(PINNED_INSTITUTION_DATA[1].name);
-      return;
-    }
-    // region 模式：等数据加载后设置前两个
-    if (activeList.length >= 2) {
+    if (mode === 'region' && activeList.length >= 2 && !itemA) {
       setItemA(activeList[0].id);
       setItemB(activeList[1].id);
     }
-  }, [mode, activeList]);
+  }, [mode, activeList, itemA]);
+
+  // 同步切换 mode + 默认选项，避免异步 effect 导致空白帧
+  const handleModeChange = (m: CompareMode) => {
+    setMode(m);
+    if (m === 'scholar') {
+      setItemA(PINNED_SCHOLAR_DATA[0].name);
+      setItemB(PINNED_SCHOLAR_DATA[1].name);
+    } else if (m === 'institution') {
+      setItemA(PINNED_INSTITUTION_DATA[0].name);
+      setItemB(PINNED_INSTITUTION_DATA[1].name);
+    } else {
+      // region：从当前已加载的列表取前两个
+      const list = regionEntities;
+      if (list.length >= 2) {
+        setItemA(list[0].id);
+        setItemB(list[1].id);
+      }
+    }
+  };
 
   const entityA = useMemo(() => activeList.find(e => e.id === itemA), [activeList, itemA]);
   const entityB = useMemo(() => activeList.find(e => e.id === itemB), [activeList, itemB]);
@@ -622,7 +630,7 @@ export const Comparison: React.FC = () => {
           {(['region', 'institution', 'scholar'] as CompareMode[]).map(m => (
             <button
               key={m}
-              onClick={() => setMode(m)}
+              onClick={() => handleModeChange(m)}
               className={`px-10 py-3 rounded-xl text-xs font-bold uppercase transition-all tracking-widest ${mode === m ? 'bg-cyan-500 text-white shadow-[0_0_25px_rgba(6,182,212,0.4)]' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50'}`}
             >
               {m} Battle
