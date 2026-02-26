@@ -553,13 +553,65 @@ export const Comparison: React.FC = () => {
   const entityB = useMemo(() => activeList.find(e => e.id === itemB), [activeList, itemB]);
   const getLabel = (id: string) => activeList.find(e => e.id === id)?.name ?? id;
 
+  // ─── Institution pinned trajectory (inline, 不走函数) ───────────────────────
+  const INST_TRAJ_MONTHS = [
+    '2025-03','2025-04','2025-05','2025-06',
+    '2025-07','2025-08','2025-09','2025-10',
+    '2025-11','2025-12','2026-01','2026-02',
+  ];
+  const INST_TRAJ_SCORES: Record<string, number[]> = {
+    'KAUST': [75,77,79,81,82,84,85,87,88,90,92,94],
+    'EPFL':  [80,81,82,82,83,84,84,85,86,87,88,89],
+  };
+
+  // ─── Scholar pinned trajectory (inline) ──────────────────────────────────────
+  const SCHOLAR_TRAJ_MONTHS = ['2025-11','2025-12','2026-01','2026-02'];
+  const SCHOLAR_TRAJ_SCORES: Record<string, number[]> = {
+    'Soeren Arlt':     [68,72,77,81],
+    'Badr AlKhamissi': [79,82,84,91],
+  };
+
   // ─── Trajectory trend data ───────────────────────────────────────────────────
   const trendData = useMemo(() => {
     if (!entityA || !entityB) return [];
 
-    // 优先使用 pinned 精确轨迹数据
-    const pinned = getPinnedTrajectory(entityA.name, entityB.name, mode);
-    if (pinned) return pinned;
+    // institution 模式：直接使用内联数据
+    if (mode === 'institution') {
+      const scoresA = INST_TRAJ_SCORES[entityA.name];
+      const scoresB = INST_TRAJ_SCORES[entityB.name];
+      if (scoresA || scoresB) {
+        return INST_TRAJ_MONTHS.map((t, i) => ({
+          time: t,
+          ...(scoresA ? { [entityA.name]: scoresA[i] } : {}),
+          ...(scoresB ? { [entityB.name]: scoresB[i] } : {}),
+        }));
+      }
+      // 无 pinned 数据时回退 rankHistory
+      return RACE_YEARS.map(y => ({
+        time: String(y),
+        [entityA.name]: entityA.rankHistory.find(h => h.year === y)?.score ?? 0,
+        [entityB.name]: entityB.rankHistory.find(h => h.year === y)?.score ?? 0,
+      }));
+    }
+
+    // scholar 模式：直接使用内联数据
+    if (mode === 'scholar') {
+      const scoresA = SCHOLAR_TRAJ_SCORES[entityA.name];
+      const scoresB = SCHOLAR_TRAJ_SCORES[entityB.name];
+      if (scoresA || scoresB) {
+        return SCHOLAR_TRAJ_MONTHS.map((t, i) => ({
+          time: t,
+          ...(scoresA ? { [entityA.name]: scoresA[i] } : {}),
+          ...(scoresB ? { [entityB.name]: scoresB[i] } : {}),
+        }));
+      }
+      // 无 pinned 数据时合成
+      return Array.from({ length: 12 }, (_, i) => ({
+        time: `2025-${String(i + 1).padStart(2, '0')}`,
+        [entityA.name]: Math.max(1, Math.round(entityA.papers * (0.45 + i / 22))),
+        [entityB.name]: Math.max(1, Math.round(entityB.papers * (0.45 + i / 22))),
+      }));
+    }
 
     if (mode === 'region') {
       const keyA = REGION_TREND_KEY[entityA.name];
@@ -616,39 +668,8 @@ export const Comparison: React.FC = () => {
       }));
     }
 
-    if (mode === 'scholar') {
-      // Synthetic monthly trend for scholars
-      return Array.from({ length: 12 }, (_, i) => {
-        const m = `2025-${String(i + 1).padStart(2, '0')}`;
-        return {
-          time: m,
-          [entityA.name]: Math.max(1, Math.round(entityA.papers * (0.45 + i / 22))),
-          [entityB.name]: Math.max(1, Math.round(entityB.papers * (0.45 + i / 22))),
-        };
-      });
-    }
-
-    // Institution mode: use real monthly trend if available, else rankHistory as fallback
-    const hasMonthly = entityA.monthlyTrend.length > 0 || entityB.monthlyTrend.length > 0;
-    if (hasMonthly) {
-      const allMonths = new Set([
-        ...entityA.monthlyTrend.map(d => d.month),
-        ...entityB.monthlyTrend.map(d => d.month),
-      ]);
-      const mapA = Object.fromEntries(entityA.monthlyTrend.map(d => [d.month, d.count]));
-      const mapB = Object.fromEntries(entityB.monthlyTrend.map(d => [d.month, d.count]));
-      return [...allMonths].sort().map(month => ({
-        time: month,
-        [entityA.name]: (mapA[month] ?? 0) * SAMPLE_SCALE,
-        [entityB.name]: (mapB[month] ?? 0) * SAMPLE_SCALE,
-      }));
-    }
-    // Fallback: synthesise from rankHistory scores (covers pinned institutions)
-    return RACE_YEARS.map(y => ({
-      time: String(y),
-      [entityA.name]: entityA.rankHistory.find(h => h.year === y)?.score ?? 0,
-      [entityB.name]: entityB.rankHistory.find(h => h.year === y)?.score ?? 0,
-    }));
+    // region fallback: should not reach here, but guard
+    return [];
   }, [entityA, entityB, mode]);
 
   // ─── Horse race data — 只展示选中的两个对比项 ──────────────────────────────
@@ -844,7 +865,8 @@ export const Comparison: React.FC = () => {
           <div className="px-4 py-2 bg-slate-100 dark:bg-white/5 rounded-xl border border-[var(--border-color)] text-[10px] text-[var(--text-dim)] font-black mono uppercase">
             {mode === 'region'
               ? 'Annual Output · Papers + News Signal (2020 – 2026)'
-              : getPinnedTrajectory(entityA?.name ?? '', entityB?.name ?? '', mode)
+              : (mode === 'institution' && (INST_TRAJ_SCORES[entityA?.name ?? ''] || INST_TRAJ_SCORES[entityB?.name ?? '']))
+                  || (mode === 'scholar' && (SCHOLAR_TRAJ_SCORES[entityA?.name ?? ''] || SCHOLAR_TRAJ_SCORES[entityB?.name ?? '']))
                 ? 'Composite Influence Score · 产出20% + 学术25% + 主导15% + 趋势15% + 合作10% + 社区15%'
                 : 'Monthly Paper Output · Scaled'}
           </div>
