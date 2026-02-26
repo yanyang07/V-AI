@@ -127,6 +127,91 @@ function jsonToHotness(d: ScholarJSON) {
   return Math.min(100, Math.round(d.community_social_mentions / 2 + d.community_media_mentions * 3 + d.community_bigname_recs * 5));
 }
 
+// ─── Pinned institution JSON data ───────────────────────────────────────────
+interface InstitutionJSON {
+  name: string;
+  research_output_papers_recent3m: number;
+  research_output_growth_rate: number;
+  academic_citations_recent3m: number;
+  academic_top_paper_ratio: number;
+  academic_high_heat_papers: number;
+  talent_top_scholars: number;
+  talent_top10pct_ratio: number;
+  tech_leadership: number;
+  industry_coop_paper_ratio: number;
+  industry_enterprise_coauth: number;
+  industry_funding_scholars: number;
+  global_intl_coauth_ratio: number;
+  global_overseas_network: number;
+  global_conf_participation: number;
+}
+
+const PINNED_INSTITUTION_DATA: InstitutionJSON[] = [
+  {
+    name: 'KAUST',
+    research_output_papers_recent3m: 62, research_output_growth_rate: 22,
+    academic_citations_recent3m: 1850, academic_top_paper_ratio: 18, academic_high_heat_papers: 14,
+    talent_top_scholars: 16, talent_top10pct_ratio: 24,
+    tech_leadership: 95,
+    industry_coop_paper_ratio: 32, industry_enterprise_coauth: 28, industry_funding_scholars: 9,
+    global_intl_coauth_ratio: 58, global_overseas_network: 92, global_conf_participation: 88,
+  },
+  {
+    name: 'EPFL',
+    research_output_papers_recent3m: 78, research_output_growth_rate: 15,
+    academic_citations_recent3m: 2450, academic_top_paper_ratio: 22, academic_high_heat_papers: 19,
+    talent_top_scholars: 12, talent_top10pct_ratio: 21,
+    tech_leadership: 88,
+    industry_coop_paper_ratio: 28, industry_enterprise_coauth: 35, industry_funding_scholars: 11,
+    global_intl_coauth_ratio: 62, global_overseas_network: 90, global_conf_participation: 85,
+  },
+];
+
+// 将机构 JSON 字段映射到 6 个雷达维度 (0-150 标尺)
+// INST_DIMS = ['Innovation', 'Research', 'Talent', 'Impact', 'Growth', 'Network']
+function jsonToInstInfluenceScores(d: InstitutionJSON) {
+  // Innovation: 技术领导力直接映射
+  const innov = Math.min(150, Math.round(d.tech_leadership * 1.5));
+  // Research: 引用 + 顶刊占比 + 高热论文
+  const maxCit = 3000;
+  const research = Math.min(150, Math.round(
+    (d.academic_citations_recent3m / maxCit) * 90 +
+    d.academic_top_paper_ratio * 1.8 +
+    d.academic_high_heat_papers * 1.5,
+  ));
+  // Talent: 顶级学者数 + 前10%占比
+  const talent = Math.min(150, Math.round(d.talent_top_scholars * 5 + d.talent_top10pct_ratio * 1.5));
+  // Impact: 引用 + 高热论文
+  const impact = Math.min(150, Math.round(
+    (d.academic_citations_recent3m / maxCit) * 100 + d.academic_high_heat_papers * 3,
+  ));
+  // Growth: 近3月产出 + 增长率
+  const growth = Math.min(150, Math.round(d.research_output_papers_recent3m * 1.1 + d.research_output_growth_rate * 2.5));
+  // Network: 国际合作 + 海外网络 + 会议 + 企业合著
+  const network = Math.min(150, Math.round(
+    d.global_intl_coauth_ratio * 0.8 +
+    d.global_overseas_network * 0.3 +
+    d.global_conf_participation * 0.3 +
+    d.industry_enterprise_coauth * 0.5,
+  ));
+  return [
+    { label: INST_DIMS[0], value: innov,    fullMark: 150 },
+    { label: INST_DIMS[1], value: research, fullMark: 150 },
+    { label: INST_DIMS[2], value: talent,   fullMark: 150 },
+    { label: INST_DIMS[3], value: impact,   fullMark: 150 },
+    { label: INST_DIMS[4], value: growth,   fullMark: 150 },
+    { label: INST_DIMS[5], value: network,  fullMark: 150 },
+  ];
+}
+
+function jsonToInstHotness(d: InstitutionJSON) {
+  return Math.min(100, Math.round(
+    d.academic_citations_recent3m / 50 +
+    d.research_output_growth_rate +
+    d.tech_leadership * 0.3,
+  ));
+}
+
 // Parse "Inst Name - Country, ..." institution field
 function parseInstitutions(raw: string): string[] {
   if (!raw) return [];
@@ -243,7 +328,27 @@ export const Comparison: React.FC = () => {
 
   // ─── Institution entities ───────────────────────────────────────────────────
   const institutionEntities = useMemo((): CompEntity[] => {
-    if (!papersData) return [];
+    // 置顶两家 JSON 精确数据机构
+    const pinnedInstNames = new Set(PINNED_INSTITUTION_DATA.map(d => d.name));
+    const pinnedInstEntities: CompEntity[] = PINNED_INSTITUTION_DATA.map((d, idx) => {
+      const hotness = jsonToInstHotness(d);
+      return {
+        id: d.name, name: d.name,
+        papers: d.research_output_papers_recent3m,
+        scholars: d.talent_top_scholars,
+        awards: d.academic_high_heat_papers,
+        hotness,
+        influenceScores: jsonToInstInfluenceScores(d),
+        rankHistory: RACE_YEARS.map((y, yi) => ({
+          year: y, rank: idx + 1,
+          score: Math.max(1, Math.round(hotness * (0.4 + yi * 0.3))),
+        })),
+        monthlyTrend: [],
+      };
+    });
+
+    if (!papersData) return pinnedInstEntities;
+
     type R = {
       papers: number; scholars: Set<string>; awards: number;
       keywords: Set<string>; byYear: Record<number, number>; byMonth: Record<string, number>;
@@ -254,6 +359,7 @@ export const Comparison: React.FC = () => {
       for (const paper of papers) {
         const insts = parseInstitutions(paper.institution);
         for (const inst of insts) {
+          if (pinnedInstNames.has(inst)) continue; // 跳过已置顶机构
           if (!stats[inst]) stats[inst] = {
             papers: 0, scholars: new Set(), awards: 0,
             keywords: new Set(), byYear: {}, byMonth: {},
@@ -273,12 +379,11 @@ export const Comparison: React.FC = () => {
     const entries = Object.entries(stats);
     const maxP = Math.max(1, ...entries.map(([, s]) => s.papers));
 
-    const entities: CompEntity[] = entries
+    const csvInstEntities: CompEntity[] = entries
       .sort(([, a], [, b]) => b.papers - a.papers)
       .slice(0, 60)
       .map(([name, s]) => {
         const ratio = s.papers / maxP;
-        // Scale to 0-150 using INST_DIMS with slight variation per dimension
         const dimWeights = [1, 0.92, 0.88, 0.85, 0.96, 0.78];
         const base150 = Math.round(ratio * 140) + 10;
         const sc150 = Math.min(150, Math.round(s.scholars.size * 4.5));
@@ -286,12 +391,12 @@ export const Comparison: React.FC = () => {
         const kw150 = Math.min(150, s.keywords.size * 18);
         const influenceScores = INST_DIMS.map((label, i) => {
           let val: number;
-          if (i === 0) val = base150; // Innovation ← paper output
-          else if (i === 1) val = Math.round(base150 * dimWeights[1] + sc150 * 0.1); // Research
-          else if (i === 2) val = sc150; // Talent ← scholar count
-          else if (i === 3) val = Math.round((base150 + aw150) / 2); // Impact
-          else if (i === 4) val = Math.round(base150 * dimWeights[4]); // Growth
-          else val = Math.round(kw150 * dimWeights[5]); // Network ← keyword diversity
+          if (i === 0) val = base150;
+          else if (i === 1) val = Math.round(base150 * dimWeights[1] + sc150 * 0.1);
+          else if (i === 2) val = sc150;
+          else if (i === 3) val = Math.round((base150 + aw150) / 2);
+          else if (i === 4) val = Math.round(base150 * dimWeights[4]);
+          else val = Math.round(kw150 * dimWeights[5]);
           return { label, value: Math.min(150, Math.max(10, val)), fullMark: 150 };
         });
         const hotness = Math.round(ratio * 100);
@@ -309,8 +414,9 @@ export const Comparison: React.FC = () => {
         };
       });
 
-    assignRanks(entities, RACE_YEARS);
-    return entities;
+    assignRanks(csvInstEntities, RACE_YEARS);
+    // 置顶 JSON 机构，其余按论文数排序
+    return [...pinnedInstEntities, ...csvInstEntities];
   }, [papersData]);
 
   // ─── Scholar entities ────────────────────────────────────────────────────────
@@ -380,9 +486,11 @@ export const Comparison: React.FC = () => {
   // mode 切换时重置默认选项
   useEffect(() => {
     if (mode === 'scholar') {
-      // scholar 模式：默认选中两位 pinned 学者
       setItemA(PINNED_SCHOLAR_DATA[0].name);
       setItemB(PINNED_SCHOLAR_DATA[1].name);
+    } else if (mode === 'institution') {
+      setItemA(PINNED_INSTITUTION_DATA[0].name);
+      setItemB(PINNED_INSTITUTION_DATA[1].name);
     } else if (activeList.length >= 2) {
       setItemA(activeList[0].id);
       setItemB(activeList[1].id);
