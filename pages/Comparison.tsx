@@ -204,6 +204,29 @@ function jsonToInstInfluenceScores(d: InstitutionJSON) {
   ];
 }
 
+// ─── Pinned trajectory data (Convergence Matrix) ────────────────────────────
+const PINNED_TRAJECTORY = {
+  time_points: ['2025-11', '2025-12', '2026-01', '2026-02'],
+  entities: [
+    { name: 'Soeren Arlt',      type: 'scholar',     scores: [68, 72, 77, 81] },
+    { name: 'Badr AlKhamissi',  type: 'scholar',     scores: [79, 82, 84, 91] },
+    { name: 'KAUST',            type: 'institution',  scores: [82, 85, 87, 94] },
+    { name: 'EPFL',             type: 'institution',  scores: [85, 86, 88, 89] },
+  ],
+};
+
+// 给定两个名字，若均有 pinned 轨迹数据则返回图表数组，否则返回 null
+function getPinnedTrajectory(nameA: string, nameB: string) {
+  const rowA = PINNED_TRAJECTORY.entities.find(e => e.name === nameA);
+  const rowB = PINNED_TRAJECTORY.entities.find(e => e.name === nameB);
+  if (!rowA || !rowB) return null;
+  return PINNED_TRAJECTORY.time_points.map((t, i) => ({
+    time: t,
+    [nameA]: rowA.scores[i],
+    [nameB]: rowB.scores[i],
+  }));
+}
+
 function jsonToInstHotness(d: InstitutionJSON) {
   return Math.min(100, Math.round(
     d.academic_citations_recent3m / 50 +
@@ -517,6 +540,10 @@ export const Comparison: React.FC = () => {
   const trendData = useMemo(() => {
     if (!entityA || !entityB) return [];
 
+    // 优先使用 pinned 精确轨迹数据
+    const pinned = getPinnedTrajectory(entityA.name, entityB.name);
+    if (pinned) return pinned;
+
     if (mode === 'region') {
       const keyA = REGION_TREND_KEY[entityA.name];
       const keyB = REGION_TREND_KEY[entityB.name];
@@ -789,7 +816,11 @@ export const Comparison: React.FC = () => {
             Trajectory Convergence Matrix
           </h3>
           <div className="px-4 py-2 bg-slate-100 dark:bg-white/5 rounded-xl border border-[var(--border-color)] text-[10px] text-[var(--text-dim)] font-black mono uppercase">
-            {mode === 'region' ? 'Annual Output · Papers + News Signal (2020 – 2026)' : 'Monthly Paper Output · Scaled'}
+            {mode === 'region'
+              ? 'Annual Output · Papers + News Signal (2020 – 2026)'
+              : getPinnedTrajectory(entityA?.name ?? '', entityB?.name ?? '')
+                ? 'Composite Influence Score · 产出20% + 学术25% + 主导15% + 趋势15% + 合作10% + 社区15%'
+                : 'Monthly Paper Output · Scaled'}
           </div>
         </div>
         <div className="flex-1 min-h-0">
