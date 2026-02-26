@@ -60,6 +60,73 @@ const SCHOLAR_DIMS = [
 // Scale factor: samplePapers ≈ 1/10 of full CSV
 const SAMPLE_SCALE = 10;
 
+// ─── Pinned scholar JSON data ────────────────────────────────────────────────
+interface ScholarJSON {
+  name: string;
+  output_total_papers: number;
+  output_recent3y_papers: number;
+  output_active_years: number;
+  academic_total_citations: number;
+  academic_hindex: number;
+  academic_max_single_citation: number;
+  domain_top_paper_ratio: number;
+  domain_term_binding: number;
+  trend_emerging_paper_ratio: number;
+  cooperation_coauthors: number;
+  cooperation_cross_inst_ratio: number;
+  cooperation_international_ratio: number;
+  community_social_mentions: number;
+  community_media_mentions: number;
+  community_bigname_recs: number;
+}
+
+const PINNED_SCHOLAR_DATA: ScholarJSON[] = [
+  {
+    name: 'Soeren Arlt',
+    output_total_papers: 15, output_recent3y_papers: 11, output_active_years: 4,
+    academic_total_citations: 110, academic_hindex: 6, academic_max_single_citation: 45,
+    domain_top_paper_ratio: 35, domain_term_binding: 85,
+    trend_emerging_paper_ratio: 85,
+    cooperation_coauthors: 28, cooperation_cross_inst_ratio: 75, cooperation_international_ratio: 45,
+    community_social_mentions: 85, community_media_mentions: 7, community_bigname_recs: 4,
+  },
+  {
+    name: 'Badr AlKhamissi',
+    output_total_papers: 35, output_recent3y_papers: 19, output_active_years: 7,
+    academic_total_citations: 900, academic_hindex: 14, academic_max_single_citation: 260,
+    domain_top_paper_ratio: 28, domain_term_binding: 82,
+    trend_emerging_paper_ratio: 70,
+    cooperation_coauthors: 45, cooperation_cross_inst_ratio: 65, cooperation_international_ratio: 55,
+    community_social_mentions: 210, community_media_mentions: 12, community_bigname_recs: 6,
+  },
+];
+
+// 将 JSON 字段映射到 5 个雷达维度 (0-150 标尺)
+function jsonToInfluenceScores(d: ScholarJSON) {
+  // 产出力: 论文总量 + 近3年活跃度 + 活跃年数
+  const prod = Math.min(150, Math.round(d.output_total_papers * 1.5 + d.output_recent3y_papers * 2.5 + d.output_active_years * 5));
+  // 学术影响力: h-index + 引用总量 + 单篇最高引用
+  const acad = Math.min(150, Math.round(d.academic_hindex * 8 + d.academic_total_citations / 30 + d.academic_max_single_citation / 8));
+  // 领域主导力: 顶刊占比 + 关键词绑定度
+  const dom  = Math.min(150, Math.round(d.domain_top_paper_ratio * 1.2 + d.domain_term_binding * 0.5));
+  // 趋势敏感度: 新兴论文占比 (0-100 → 0-150)
+  const sens = Math.min(150, Math.round(d.trend_emerging_paper_ratio * 1.5));
+  // 合作影响半径: 合著人数 + 跨机构 + 国际化比例
+  const rad  = Math.min(150, Math.round(d.cooperation_coauthors * 1.8 + d.cooperation_cross_inst_ratio * 0.6 + d.cooperation_international_ratio * 0.4));
+  return [
+    { label: SCHOLAR_DIMS[0], value: prod, fullMark: 150 },
+    { label: SCHOLAR_DIMS[1], value: acad, fullMark: 150 },
+    { label: SCHOLAR_DIMS[2], value: dom,  fullMark: 150 },
+    { label: SCHOLAR_DIMS[3], value: sens, fullMark: 150 },
+    { label: SCHOLAR_DIMS[4], value: rad,  fullMark: 150 },
+  ];
+}
+
+// 社区热度 → 0-100 hotness
+function jsonToHotness(d: ScholarJSON) {
+  return Math.min(100, Math.round(d.community_social_mentions / 2 + d.community_media_mentions * 3 + d.community_bigname_recs * 5));
+}
+
 // Parse "Inst Name - Country, ..." institution field
 function parseInstitutions(raw: string): string[] {
   if (!raw) return [];
@@ -247,15 +314,32 @@ export const Comparison: React.FC = () => {
 
   // ─── Scholar entities ────────────────────────────────────────────────────────
   const scholarEntities = useMemo((): CompEntity[] => {
-    if (!scholarsData) return [];
+    // 置顶两位 JSON 精确数据学者
+    const pinnedNames = new Set(PINNED_SCHOLAR_DATA.map(d => d.name));
+    const pinnedEntities: CompEntity[] = PINNED_SCHOLAR_DATA.map((d, idx) => {
+      const hotness = jsonToHotness(d);
+      return {
+        id: d.name, name: d.name,
+        papers: d.output_total_papers, scholars: 1, awards: 0, hotness,
+        influenceScores: jsonToInfluenceScores(d),
+        rankHistory: RACE_YEARS.map((y, yi) => ({
+          year: y, rank: idx + 1,
+          score: Math.max(1, Math.round(hotness * (0.4 + yi * 0.3))),
+        })),
+        monthlyTrend: [],
+      };
+    });
+
+    if (!scholarsData) return pinnedEntities;
+
     const scholars = [...scholarsData.scholars]
+      .filter(s => !pinnedNames.has(s.name))   // 避免重复
       .sort((a, b) => b.paperCount - a.paperCount)
       .slice(0, 80);
     const maxP = Math.max(1, scholars[0]?.paperCount ?? 1);
 
-    return scholars.map((s, idx) => {
+    const csvEntities: CompEntity[] = scholars.map((s, idx) => {
       const ratio = s.paperCount / maxP;
-      // Scale to 0-150 using SCHOLAR_DIMS
       const prod150  = Math.round(ratio * 140) + 10;
       const acad150  = Math.min(150, Math.round(prod150 * 0.88 + s.awards.length * 8));
       const dom150   = Math.min(150, Math.round((s.fields[0]?.split(',').length ?? 1) * 25 + prod150 * 0.3));
@@ -280,6 +364,9 @@ export const Comparison: React.FC = () => {
         monthlyTrend: [],
       } as CompEntity;
     });
+
+    // 置顶 JSON 学者，其余按论文数排序
+    return [...pinnedEntities, ...csvEntities];
   }, [scholarsData]);
 
   // ─── Active list ─────────────────────────────────────────────────────────────
@@ -386,18 +473,18 @@ export const Comparison: React.FC = () => {
     }));
   }, [entityA, entityB, mode]);
 
-  // ─── Horse race data ─────────────────────────────────────────────────────────
+  // ─── Horse race data — 只展示选中的两个对比项 ──────────────────────────────
   const horseRaceData = useMemo(() => {
-    return activeList
+    return [itemA, itemB]
+      .map(id => activeList.find(e => e.id === id))
+      .filter((e): e is CompEntity => !!e)
       .map(e => ({
         name: e.name.length > 28 ? e.name.substring(0, 28) + '…' : e.name,
         score: e.rankHistory.find(h => h.year === raceYear)?.score ?? 0,
         id: e.id,
       }))
-      .filter(e => e.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10);
-  }, [activeList, raceYear]);
+      .sort((a, b) => b.score - a.score);
+  }, [activeList, itemA, itemB, raceYear]);
 
   // ─── Loading state ────────────────────────────────────────────────────────────
   if (!entityA || !entityB) {
@@ -482,7 +569,7 @@ export const Comparison: React.FC = () => {
             ))}
           </div>
         </div>
-        <div className="h-[350px] relative z-10">
+        <div className="h-[160px] relative z-10">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               layout="vertical"
