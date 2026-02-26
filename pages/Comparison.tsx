@@ -215,15 +215,15 @@ const PINNED_TRAJECTORY = {
   ],
 };
 
-// 给定两个名字，若均有 pinned 轨迹数据则返回图表数组，否则返回 null
+// 给定两个名字，只要至少一个有 pinned 轨迹数据即返回图表数组
 function getPinnedTrajectory(nameA: string, nameB: string) {
   const rowA = PINNED_TRAJECTORY.entities.find(e => e.name === nameA);
   const rowB = PINNED_TRAJECTORY.entities.find(e => e.name === nameB);
-  if (!rowA || !rowB) return null;
+  if (!rowA && !rowB) return null;
   return PINNED_TRAJECTORY.time_points.map((t, i) => ({
     time: t,
-    [nameA]: rowA.scores[i],
-    [nameB]: rowB.scores[i],
+    ...(rowA ? { [nameA]: rowA.scores[i] } : {}),
+    ...(rowB ? { [nameB]: rowB.scores[i] } : {}),
   }));
 }
 
@@ -611,17 +611,26 @@ export const Comparison: React.FC = () => {
       });
     }
 
-    // Institution mode: real monthly data × SAMPLE_SCALE for realistic volume
-    const allMonths = new Set([
-      ...entityA.monthlyTrend.map(d => d.month),
-      ...entityB.monthlyTrend.map(d => d.month),
-    ]);
-    const mapA = Object.fromEntries(entityA.monthlyTrend.map(d => [d.month, d.count]));
-    const mapB = Object.fromEntries(entityB.monthlyTrend.map(d => [d.month, d.count]));
-    return [...allMonths].sort().map(month => ({
-      time: month,
-      [entityA.name]: (mapA[month] ?? 0) * SAMPLE_SCALE,
-      [entityB.name]: (mapB[month] ?? 0) * SAMPLE_SCALE,
+    // Institution mode: use real monthly trend if available, else rankHistory as fallback
+    const hasMonthly = entityA.monthlyTrend.length > 0 || entityB.monthlyTrend.length > 0;
+    if (hasMonthly) {
+      const allMonths = new Set([
+        ...entityA.monthlyTrend.map(d => d.month),
+        ...entityB.monthlyTrend.map(d => d.month),
+      ]);
+      const mapA = Object.fromEntries(entityA.monthlyTrend.map(d => [d.month, d.count]));
+      const mapB = Object.fromEntries(entityB.monthlyTrend.map(d => [d.month, d.count]));
+      return [...allMonths].sort().map(month => ({
+        time: month,
+        [entityA.name]: (mapA[month] ?? 0) * SAMPLE_SCALE,
+        [entityB.name]: (mapB[month] ?? 0) * SAMPLE_SCALE,
+      }));
+    }
+    // Fallback: synthesise from rankHistory scores (covers pinned institutions)
+    return RACE_YEARS.map(y => ({
+      time: String(y),
+      [entityA.name]: entityA.rankHistory.find(h => h.year === y)?.score ?? 0,
+      [entityB.name]: entityB.rankHistory.find(h => h.year === y)?.score ?? 0,
     }));
   }, [entityA, entityB, mode]);
 
