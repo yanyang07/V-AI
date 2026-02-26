@@ -205,22 +205,39 @@ function jsonToInstInfluenceScores(d: InstitutionJSON) {
 }
 
 // ─── Pinned trajectory data (Convergence Matrix) ────────────────────────────
-const PINNED_TRAJECTORY = {
+// scholar 轨迹用4个月，institution 轨迹用12个月，各自独立
+const PINNED_TRAJECTORY_SCHOLAR = {
   time_points: ['2025-11', '2025-12', '2026-01', '2026-02'],
   entities: [
-    { name: 'Soeren Arlt',      type: 'scholar',     scores: [68, 72, 77, 81] },
-    { name: 'Badr AlKhamissi',  type: 'scholar',     scores: [79, 82, 84, 91] },
-    { name: 'KAUST',            type: 'institution',  scores: [82, 85, 87, 94] },
-    { name: 'EPFL',             type: 'institution',  scores: [85, 86, 88, 89] },
+    { name: 'Soeren Arlt',     scores: [68, 72, 77, 81] },
+    { name: 'Badr AlKhamissi', scores: [79, 82, 84, 91] },
   ],
 };
 
-// 给定两个名字，只要至少一个有 pinned 轨迹数据即返回图表数组
-function getPinnedTrajectory(nameA: string, nameB: string) {
-  const rowA = PINNED_TRAJECTORY.entities.find(e => e.name === nameA);
-  const rowB = PINNED_TRAJECTORY.entities.find(e => e.name === nameB);
+const PINNED_TRAJECTORY_INSTITUTION = {
+  time_points: [
+    '2025-03', '2025-04', '2025-05', '2025-06',
+    '2025-07', '2025-08', '2025-09', '2025-10',
+    '2025-11', '2025-12', '2026-01', '2026-02',
+  ],
+  entities: [
+    { name: 'KAUST', scores: [75, 77, 79, 81, 82, 84, 85, 87, 88, 90, 92, 94] },
+    { name: 'EPFL',  scores: [80, 81, 82, 82, 83, 84, 84, 85, 86, 87, 88, 89] },
+  ],
+};
+
+// 根据 mode 选择对应轨迹表，只要至少一个有 pinned 数据就返回图表数组
+function getPinnedTrajectory(nameA: string, nameB: string, mode: 'scholar' | 'institution' | 'region') {
+  const table = mode === 'scholar'
+    ? PINNED_TRAJECTORY_SCHOLAR
+    : mode === 'institution'
+    ? PINNED_TRAJECTORY_INSTITUTION
+    : null;
+  if (!table) return null;
+  const rowA = table.entities.find(e => e.name === nameA);
+  const rowB = table.entities.find(e => e.name === nameB);
   if (!rowA && !rowB) return null;
-  return PINNED_TRAJECTORY.time_points.map((t, i) => ({
+  return table.time_points.map((t, i) => ({
     time: t,
     ...(rowA ? { [nameA]: rowA.scores[i] } : {}),
     ...(rowB ? { [nameB]: rowB.scores[i] } : {}),
@@ -541,7 +558,7 @@ export const Comparison: React.FC = () => {
     if (!entityA || !entityB) return [];
 
     // 优先使用 pinned 精确轨迹数据
-    const pinned = getPinnedTrajectory(entityA.name, entityB.name);
+    const pinned = getPinnedTrajectory(entityA.name, entityB.name, mode);
     if (pinned) return pinned;
 
     if (mode === 'region') {
@@ -827,7 +844,7 @@ export const Comparison: React.FC = () => {
           <div className="px-4 py-2 bg-slate-100 dark:bg-white/5 rounded-xl border border-[var(--border-color)] text-[10px] text-[var(--text-dim)] font-black mono uppercase">
             {mode === 'region'
               ? 'Annual Output · Papers + News Signal (2020 – 2026)'
-              : getPinnedTrajectory(entityA?.name ?? '', entityB?.name ?? '')
+              : getPinnedTrajectory(entityA?.name ?? '', entityB?.name ?? '', mode)
                 ? 'Composite Influence Score · 产出20% + 学术25% + 主导15% + 趋势15% + 合作10% + 社区15%'
                 : 'Monthly Paper Output · Scaled'}
           </div>
