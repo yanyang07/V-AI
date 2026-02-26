@@ -170,8 +170,9 @@ export const Comparison: React.FC = () => {
   const { data: scholarsData } = useScholars();
 
   const [mode, setMode] = useState<CompareMode>('region');
-  const [itemA, setItemA] = useState<string>('');
-  const [itemB, setItemB] = useState<string>('');
+  // scholar 模式默认选中两位 pinned 学者
+  const [itemA, setItemA] = useState<string>(PINNED_SCHOLAR_DATA[0].name);
+  const [itemB, setItemB] = useState<string>(PINNED_SCHOLAR_DATA[1].name);
   const [activeMetric] = useState<string>('papers');
   const [raceYear, setRaceYear] = useState(2025);
   const [hoveredEntity, setHoveredEntity] = useState<string | null>(null);
@@ -376,13 +377,18 @@ export const Comparison: React.FC = () => {
     ? institutionEntities
     : scholarEntities;
 
-  // Set defaults when mode or data changes
+  // mode 切换时重置默认选项
   useEffect(() => {
-    if (activeList.length >= 2) {
+    if (mode === 'scholar') {
+      // scholar 模式：默认选中两位 pinned 学者
+      setItemA(PINNED_SCHOLAR_DATA[0].name);
+      setItemB(PINNED_SCHOLAR_DATA[1].name);
+    } else if (activeList.length >= 2) {
       setItemA(activeList[0].id);
       setItemB(activeList[1].id);
     }
-  }, [mode, activeList]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   const entityA = useMemo(() => activeList.find(e => e.id === itemA), [activeList, itemA]);
   const entityB = useMemo(() => activeList.find(e => e.id === itemB), [activeList, itemB]);
