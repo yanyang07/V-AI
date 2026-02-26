@@ -290,6 +290,22 @@ function assignRanks(entities: CompEntity[], years: number[]) {
   });
 }
 
+// ─── 模块级轨迹常量（避免 useMemo closure 问题）────────────────────────────────
+const INST_TRAJ_MONTHS = [
+  '2025-03','2025-04','2025-05','2025-06',
+  '2025-07','2025-08','2025-09','2025-10',
+  '2025-11','2025-12','2026-01','2026-02',
+];
+const INST_TRAJ_SCORES: Record<string, number[]> = {
+  'KAUST': [75,77,79,81,82,84,85,87,88,90,92,94],
+  'EPFL':  [80,81,82,82,83,84,84,85,86,87,88,89],
+};
+const SCHOLAR_TRAJ_MONTHS = ['2025-11','2025-12','2026-01','2026-02'];
+const SCHOLAR_TRAJ_SCORES: Record<string, number[]> = {
+  'Soeren Arlt':     [68,72,77,81],
+  'Badr AlKhamissi': [79,82,84,91],
+};
+
 export const Comparison: React.FC = () => {
   const { data: papersData } = usePapers();
   const { data: scholarsData } = useScholars();
@@ -552,24 +568,6 @@ export const Comparison: React.FC = () => {
   const entityA = useMemo(() => activeList.find(e => e.id === itemA), [activeList, itemA]);
   const entityB = useMemo(() => activeList.find(e => e.id === itemB), [activeList, itemB]);
   const getLabel = (id: string) => activeList.find(e => e.id === id)?.name ?? id;
-
-  // ─── Institution pinned trajectory (inline, 不走函数) ───────────────────────
-  const INST_TRAJ_MONTHS = [
-    '2025-03','2025-04','2025-05','2025-06',
-    '2025-07','2025-08','2025-09','2025-10',
-    '2025-11','2025-12','2026-01','2026-02',
-  ];
-  const INST_TRAJ_SCORES: Record<string, number[]> = {
-    'KAUST': [75,77,79,81,82,84,85,87,88,90,92,94],
-    'EPFL':  [80,81,82,82,83,84,84,85,86,87,88,89],
-  };
-
-  // ─── Scholar pinned trajectory (inline) ──────────────────────────────────────
-  const SCHOLAR_TRAJ_MONTHS = ['2025-11','2025-12','2026-01','2026-02'];
-  const SCHOLAR_TRAJ_SCORES: Record<string, number[]> = {
-    'Soeren Arlt':     [68,72,77,81],
-    'Badr AlKhamissi': [79,82,84,91],
-  };
 
   // ─── Trajectory trend data ───────────────────────────────────────────────────
   const trendData = useMemo(() => {
