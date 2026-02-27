@@ -558,7 +558,8 @@ export const Scholars: React.FC = () => {
   const [showCount, setShowCount] = useState(6);
   const [activeSort, setActiveSort] = useState<SortOption>(SortOption.INFLUENCE);
   const [selectedRegion, setSelectedRegion] = useState('All');
-  const [activeKeyword, setActiveKeyword] = useState(KEYWORDS_LIST[0]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [activeKeyword, setActiveKeyword] = useState('OpenClaw');
   // 切换关键词时重置地区筛选
   useEffect(() => { setSelectedRegion('All'); }, [activeKeyword]);
   const [detailScholar, setDetailScholar] = useState<Scholar | null>(null);
@@ -630,7 +631,7 @@ export const Scholars: React.FC = () => {
       {/* Branding Header */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-[var(--border-color)] pb-8 gap-4 px-4">
         <div className="relative">
-          <KeywordSwitcher keywords={KEYWORDS_LIST} value={activeKeyword} onChange={setActiveKeyword} accent="cyan" />
+          <KeywordSwitcher keywords={['OpenClaw', 'Seedance 2.0']} value={activeKeyword} onChange={setActiveKeyword} accent="cyan" />
           <p className="text-cyan-600 dark:text-cyan-400 font-bold uppercase tracking-[0.4em] text-[10px] mt-2">Discovery of Key AI Figures</p>
         </div>
         <div className="flex gap-6 items-center">
@@ -644,63 +645,80 @@ export const Scholars: React.FC = () => {
         </div>
       </header>
 
-      {/* 1. Filter Matrix */}
-      <div className="glass p-8 rounded-[40px] border border-[var(--border-color)] flex flex-col gap-8 mx-4">
-        <div className="flex flex-wrap gap-8 items-end justify-between">
-          
-          {/* Custom Time Range Selector */}
-          <div className="space-y-4 flex-1 min-w-[300px]">
-             <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block">Custom Temporal Sync Window</label>
-             <div className="flex flex-wrap items-center gap-4 bg-slate-100 dark:bg-slate-900/40 p-4 rounded-3xl border border-[var(--border-color)] shadow-inner">
-               <div className="flex items-center gap-2">
-                 <select value={startYear} onChange={e => setStartYear(Number(e.target.value))} className="bg-white dark:bg-slate-950 border border-[var(--border-color)] text-xs font-bold text-cyan-600 dark:text-cyan-400 rounded-lg px-3 py-1.5 outline-none">
-                    {years.map(y => <option key={y} value={y}>{y}Y</option>)}
-                 </select>
-                 <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))} className="bg-white dark:bg-slate-950 border border-[var(--border-color)] text-xs font-bold text-cyan-600 dark:text-cyan-400 rounded-lg px-3 py-1.5 outline-none">
-                    {months.map(m => <option key={m} value={m}>{m}M</option>)}
-                 </select>
-               </div>
-               <span className="text-slate-600 dark:text-slate-400 font-bold text-xs uppercase tracking-widest">To</span>
-               <div className="flex items-center gap-2">
-                 <select value={endYear} onChange={e => setEndYear(Number(e.target.value))} className="bg-white dark:bg-slate-950 border border-[var(--border-color)] text-xs font-bold text-cyan-600 dark:text-cyan-400 rounded-lg px-3 py-1.5 outline-none">
-                    {years.map(y => <option key={y} value={y}>{y}Y</option>)}
-                 </select>
-                 <select value={endMonth} onChange={e => setEndMonth(Number(e.target.value))} className="bg-white dark:bg-slate-950 border border-[var(--border-color)] text-xs font-bold text-cyan-600 dark:text-cyan-400 rounded-lg px-3 py-1.5 outline-none">
-                    {months.map(m => <option key={m} value={m}>{m}M</option>)}
-                 </select>
-               </div>
-               <div className="ml-auto flex items-center gap-2 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase">
-                  <i className="fa-solid fa-circle-check"></i> Active Range
-               </div>
-             </div>
+      {/* 1. Filter Matrix — 默认收起，点击展开 */}
+      <div className="glass rounded-[28px] border border-[var(--border-color)] mx-4 overflow-hidden">
+        {/* 折叠头：始终可见，显示当前筛选摘要 */}
+        <button
+          onClick={() => setFiltersOpen(o => !o)}
+          className="w-full flex items-center justify-between px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <i className="fa-solid fa-sliders text-cyan-500 text-xs" />
+            <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">Filters</span>
+            <span className="text-[10px] text-slate-400 font-bold ml-2">
+              {activeSort} · {selectedRegion}
+            </span>
           </div>
+          <i className={`fa-solid fa-chevron-down text-[10px] text-slate-400 transition-transform duration-200 ${filtersOpen ? 'rotate-180' : ''}`} />
+        </button>
 
-          <div className="space-y-4">
-             <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block">Sort Priority</label>
-             <div className="flex gap-2 bg-slate-100 dark:bg-slate-900/60 p-1.5 rounded-2xl border border-[var(--border-color)]">
-               {['INFLUENCE', 'CITATIONS', 'HOTNESS'].map(opt => (
-                 <button 
-                  key={opt}
-                  onClick={() => setActiveSort(opt as SortOption)}
-                  className={`px-6 py-2 rounded-xl text-[10px] font-black transition-all ${activeSort === opt ? 'bg-cyan-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-400'}`}
-                 >
-                   {opt}
-                 </button>
-               ))}
-             </div>
-          </div>
+        {/* 展开内容 */}
+        {filtersOpen && (
+          <div className="px-6 pb-6 border-t border-[var(--border-color)] pt-5 flex flex-wrap gap-8 items-end justify-between">
 
-          <div className="space-y-4">
-             <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block">Geospatial Sync</label>
-             <select
-              value={selectedRegion}
-              onChange={e => setSelectedRegion(e.target.value)}
-              className="bg-slate-100 dark:bg-slate-900 border border-[var(--border-color)] rounded-xl px-6 py-3 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-cyan-500/50 appearance-none min-w-[150px]"
-             >
-               {regionOptions.map(r => <option key={r}>{r}</option>)}
-             </select>
+            {/* Time Range */}
+            <div className="space-y-3 flex-1 min-w-[260px]">
+              <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block">Temporal Sync Window</label>
+              <div className="flex flex-wrap items-center gap-3 bg-slate-100 dark:bg-slate-900/40 p-3 rounded-2xl border border-[var(--border-color)]">
+                <div className="flex items-center gap-2">
+                  <select value={startYear} onChange={e => setStartYear(Number(e.target.value))} className="bg-white dark:bg-slate-950 border border-[var(--border-color)] text-xs font-bold text-cyan-600 dark:text-cyan-400 rounded-lg px-2 py-1.5 outline-none">
+                    {years.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                  <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))} className="bg-white dark:bg-slate-950 border border-[var(--border-color)] text-xs font-bold text-cyan-600 dark:text-cyan-400 rounded-lg px-2 py-1.5 outline-none">
+                    {months.map(m => <option key={m} value={m}>{m}M</option>)}
+                  </select>
+                </div>
+                <span className="text-slate-400 font-bold text-xs">→</span>
+                <div className="flex items-center gap-2">
+                  <select value={endYear} onChange={e => setEndYear(Number(e.target.value))} className="bg-white dark:bg-slate-950 border border-[var(--border-color)] text-xs font-bold text-cyan-600 dark:text-cyan-400 rounded-lg px-2 py-1.5 outline-none">
+                    {years.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                  <select value={endMonth} onChange={e => setEndMonth(Number(e.target.value))} className="bg-white dark:bg-slate-950 border border-[var(--border-color)] text-xs font-bold text-cyan-600 dark:text-cyan-400 rounded-lg px-2 py-1.5 outline-none">
+                    {months.map(m => <option key={m} value={m}>{m}M</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Sort */}
+            <div className="space-y-3">
+              <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block">Sort Priority</label>
+              <div className="flex gap-1.5 bg-slate-100 dark:bg-slate-900/60 p-1.5 rounded-2xl border border-[var(--border-color)]">
+                {['INFLUENCE', 'CITATIONS', 'HOTNESS'].map(opt => (
+                  <button
+                    key={opt}
+                    onClick={() => setActiveSort(opt as SortOption)}
+                    className={`px-4 py-1.5 rounded-xl text-[10px] font-black transition-all ${activeSort === opt ? 'bg-cyan-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-400'}`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Region */}
+            <div className="space-y-3">
+              <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block">Geospatial Sync</label>
+              <select
+                value={selectedRegion}
+                onChange={e => setSelectedRegion(e.target.value)}
+                className="bg-slate-100 dark:bg-slate-900 border border-[var(--border-color)] rounded-xl px-4 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-cyan-500/50 appearance-none min-w-[140px]"
+              >
+                {regionOptions.map(r => <option key={r}>{r}</option>)}
+              </select>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* 2. Scholar Matrix */}
