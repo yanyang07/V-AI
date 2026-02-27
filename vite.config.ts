@@ -5,7 +5,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
-      base: '/V-AI/',   // GitHub Pages repo name
+      // Vercel 部署用 '/'，GitHub Pages 用 '/V-AI/'
+      base: process.env.VERCEL ? '/' : '/V-AI/',
       server: {
         port: 3000,
         host: 'localhost',

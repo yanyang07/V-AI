@@ -54,13 +54,15 @@ const CustomTooltip = ({ active, payload, label, currentMetric }: any) => {
 interface TrendChartProps {
   metric?: string;
   onMetricChange?: (metric: string) => void;
+  data?: any[];
 }
 
-export const TrendChart: React.FC<TrendChartProps> = ({ metric: controlledMetric, onMetricChange }) => {
+export const TrendChart: React.FC<TrendChartProps> = ({ metric: controlledMetric, onMetricChange, data }) => {
   const [internalMetric, setInternalMetric] = useState<string>('compositeIndex');
 
   const metric = controlledMetric !== undefined ? controlledMetric : internalMetric;
   const setMetric = onMetricChange || setInternalMetric;
+  const chartData = data ?? TREND_MOCK;
 
   const metricConfig: Record<string, { color: string; name: string }> = {
     compositeIndex: { color: '#06b6d4', name: 'Composite Index' },
@@ -92,7 +94,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ metric: controlledMetric
 
       <div className="flex-1 min-h-[300px] overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={TREND_MOCK}>
+          <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#88888820" vertical={false} />
             <XAxis dataKey="time" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
             <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />

@@ -25,7 +25,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
     { id: 'scholars', label: 'Scholars', icon: 'fa-user-graduate' },
     { id: 'institutions', label: 'Institutions', icon: 'fa-building-columns' },
     { id: 'papers', label: 'Papers', icon: 'fa-file-lines' },
-    { id: 'search', label: 'Search', icon: 'fa-satellite-dish' },
+    // { id: 'search', label: 'Search', icon: 'fa-satellite-dish' }, // 隐藏中，恢复请取消注释
   ];
 
   return (

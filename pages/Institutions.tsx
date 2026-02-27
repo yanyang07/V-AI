@@ -186,6 +186,67 @@ const InstitutionCard: React.FC<{ institution: Institution; rank: number }> = ({
   );
 };
 
+// ── JSON influence data for known institutions ────────────────────────────────
+interface InstJSON {
+  name: string;
+  research_output_papers_recent3m: number;
+  research_output_growth_rate: number;
+  academic_citations_recent3m: number;
+  academic_top_paper_ratio: number;
+  academic_high_heat_papers: number;
+  talent_top_scholars: number;
+  talent_top10pct_ratio: number;
+  tech_leadership: number;
+  industry_enterprise_coauth: number;
+  global_intl_coauth_ratio: number;
+  global_overseas_network: number;
+}
+
+const INST_JSON_LIST: InstJSON[] = [
+  { name: 'Stanford University',                    research_output_papers_recent3m: 180, research_output_growth_rate: 12, academic_citations_recent3m: 6200,  academic_top_paper_ratio: 28, academic_high_heat_papers: 42, talent_top_scholars: 45, talent_top10pct_ratio: 32, tech_leadership: 96, industry_enterprise_coauth: 65,  global_intl_coauth_ratio: 68, global_overseas_network: 95 },
+  { name: 'Shanghai Jiao Tong University',          research_output_papers_recent3m: 210, research_output_growth_rate: 25, academic_citations_recent3m: 4800,  academic_top_paper_ratio: 24, academic_high_heat_papers: 38, talent_top_scholars: 32, talent_top10pct_ratio: 28, tech_leadership: 92, industry_enterprise_coauth: 55,  global_intl_coauth_ratio: 52, global_overseas_network: 85 },
+  { name: 'UC Berkeley',                            research_output_papers_recent3m: 165, research_output_growth_rate: 14, academic_citations_recent3m: 5500,  academic_top_paper_ratio: 26, academic_high_heat_papers: 35, talent_top_scholars: 38, talent_top10pct_ratio: 29, tech_leadership: 93, industry_enterprise_coauth: 70,  global_intl_coauth_ratio: 65, global_overseas_network: 92 },
+  { name: 'Carnegie Mellon University',             research_output_papers_recent3m: 190, research_output_growth_rate: 18, academic_citations_recent3m: 5100,  academic_top_paper_ratio: 25, academic_high_heat_papers: 40, talent_top_scholars: 40, talent_top10pct_ratio: 30, tech_leadership: 94, industry_enterprise_coauth: 68,  global_intl_coauth_ratio: 60, global_overseas_network: 88 },
+  { name: 'Google Cloud AI Research',               research_output_papers_recent3m: 140, research_output_growth_rate: 20, academic_citations_recent3m: 8500,  academic_top_paper_ratio: 35, academic_high_heat_papers: 55, talent_top_scholars: 60, talent_top10pct_ratio: 40, tech_leadership: 98, industry_enterprise_coauth: 120, global_intl_coauth_ratio: 70, global_overseas_network: 96 },
+  { name: 'Institute of Foundation Models',         research_output_papers_recent3m: 45,  research_output_growth_rate: 45, academic_citations_recent3m: 1800,  academic_top_paper_ratio: 30, academic_high_heat_papers: 12, talent_top_scholars: 15, talent_top10pct_ratio: 35, tech_leadership: 90, industry_enterprise_coauth: 30,  global_intl_coauth_ratio: 75, global_overseas_network: 88 },
+  { name: 'ByteDance',                              research_output_papers_recent3m: 110, research_output_growth_rate: 28, academic_citations_recent3m: 4200,  academic_top_paper_ratio: 22, academic_high_heat_papers: 28, talent_top_scholars: 25, talent_top10pct_ratio: 26, tech_leadership: 91, industry_enterprise_coauth: 80,  global_intl_coauth_ratio: 48, global_overseas_network: 82 },
+  { name: 'METR',                                   research_output_papers_recent3m: 35,  research_output_growth_rate: 35, academic_citations_recent3m: 1400,  academic_top_paper_ratio: 38, academic_high_heat_papers: 10, talent_top_scholars: 12, talent_top10pct_ratio: 42, tech_leadership: 88, industry_enterprise_coauth: 25,  global_intl_coauth_ratio: 70, global_overseas_network: 85 },
+  { name: 'Microsoft Research',                     research_output_papers_recent3m: 220, research_output_growth_rate: 16, academic_citations_recent3m: 9800,  academic_top_paper_ratio: 32, academic_high_heat_papers: 65, talent_top_scholars: 70, talent_top10pct_ratio: 38, tech_leadership: 97, industry_enterprise_coauth: 150, global_intl_coauth_ratio: 72, global_overseas_network: 94 },
+  { name: 'National University of Singapore',       research_output_papers_recent3m: 130, research_output_growth_rate: 19, academic_citations_recent3m: 3800,  academic_top_paper_ratio: 21, academic_high_heat_papers: 25, talent_top_scholars: 28, talent_top10pct_ratio: 25, tech_leadership: 89, industry_enterprise_coauth: 50,  global_intl_coauth_ratio: 65, global_overseas_network: 90 },
+  { name: 'Tsinghua University',                    research_output_papers_recent3m: 240, research_output_growth_rate: 22, academic_citations_recent3m: 5200,  academic_top_paper_ratio: 26, academic_high_heat_papers: 45, talent_top_scholars: 50, talent_top10pct_ratio: 34, tech_leadership: 94, industry_enterprise_coauth: 75,  global_intl_coauth_ratio: 55, global_overseas_network: 88 },
+  { name: 'University of Hong Kong',                research_output_papers_recent3m: 95,  research_output_growth_rate: 17, academic_citations_recent3m: 2800,  academic_top_paper_ratio: 20, academic_high_heat_papers: 18, talent_top_scholars: 20, talent_top10pct_ratio: 22, tech_leadership: 85, industry_enterprise_coauth: 40,  global_intl_coauth_ratio: 60, global_overseas_network: 84 },
+  { name: 'Tencent',                                research_output_papers_recent3m: 85,  research_output_growth_rate: 30, academic_citations_recent3m: 3500,  academic_top_paper_ratio: 24, academic_high_heat_papers: 22, talent_top_scholars: 22, talent_top10pct_ratio: 27, tech_leadership: 90, industry_enterprise_coauth: 90,  global_intl_coauth_ratio: 45, global_overseas_network: 80 },
+  { name: 'Apple',                                  research_output_papers_recent3m: 70,  research_output_growth_rate: 15, academic_citations_recent3m: 4100,  academic_top_paper_ratio: 29, academic_high_heat_papers: 20, talent_top_scholars: 35, talent_top10pct_ratio: 33, tech_leadership: 92, industry_enterprise_coauth: 60,  global_intl_coauth_ratio: 55, global_overseas_network: 90 },
+  { name: 'Nanyang Technological University',       research_output_papers_recent3m: 145, research_output_growth_rate: 20, academic_citations_recent3m: 3900,  academic_top_paper_ratio: 22, academic_high_heat_papers: 30, talent_top_scholars: 30, talent_top10pct_ratio: 26, tech_leadership: 88, industry_enterprise_coauth: 58,  global_intl_coauth_ratio: 62, global_overseas_network: 87 },
+];
+
+// 模糊名称匹配：institution 名包含 JSON key 的任意词
+function findInstJSON(name: string): InstJSON | undefined {
+  const lc = name.toLowerCase();
+  return INST_JSON_LIST.find(d => {
+    const jlc = d.name.toLowerCase();
+    return lc.includes(jlc) || jlc.includes(lc) ||
+      // 首词匹配（如 "Tsinghua" in "Tsinghua University"）
+      d.name.split(' ').some(w => w.length > 4 && lc.includes(w.toLowerCase()));
+  });
+}
+
+// 将 JSON 字段映射到 5 个雷达维度（fullMark: 100）
+function jsonToInstRadar(d: InstJSON) {
+  const resOut  = Math.min(100, Math.round(d.research_output_papers_recent3m / 250 * 70 + d.academic_top_paper_ratio * 0.8));
+  const talent  = Math.min(100, Math.round(d.talent_top_scholars / 70 * 80 + d.talent_top10pct_ratio * 0.5));
+  const impact  = Math.min(100, Math.round(d.academic_citations_recent3m / 10000 * 80 + d.academic_high_heat_papers / 70 * 20));
+  const innov   = Math.min(100, Math.round(d.tech_leadership * 0.75 + d.research_output_growth_rate * 0.8));
+  const collab  = Math.min(100, Math.round(d.global_intl_coauth_ratio * 0.5 + d.global_overseas_network * 0.3 + d.industry_enterprise_coauth / 150 * 25));
+  return [
+    { label: 'Research Output', value: resOut,  fullMark: 100 },
+    { label: 'Talent Pool',     value: talent,  fullMark: 100 },
+    { label: 'Global Impact',   value: impact,  fullMark: 100 },
+    { label: 'Innovation',      value: innov,   fullMark: 100 },
+    { label: 'Collaboration',   value: collab,  fullMark: 100 },
+  ];
+}
+
 // ── Parse institution names from raw CSV string ───────────────────────────────
 function parseInstitutions(raw: string): string[] {
   if (!raw) return [];
@@ -229,6 +290,41 @@ function detectRegion(name: string): string {
   return 'Global';
 }
 
+// ── 中文机构简介映射（优先展示，key 为 JSON name 的关键词） ───────────────────────
+const INST_DESC_ZH: Record<string, string> = {
+  'Stanford University':                  '斯坦福大学 — 硅谷核心AI研究重镇，在大模型、具身智能与强化学习领域持续引领全球前沿突破。',
+  'Shanghai Jiao Tong University':        '上海交通大学 — 国内AI论文产出最密集的高校之一，在多模态感知、机器人与工业智能方向成果卓著。',
+  'UC Berkeley':                          '加州大学伯克利分校 — RLHF与开源大模型的重要发源地，与工业界深度联合推动AI应用落地。',
+  'Carnegie Mellon University':           '卡内基梅隆大学 — 计算机与AI教育的世界标杆，机器人、NLP与安全AI领域的重要研究中心。',
+  'Google Cloud AI Research':             'Google Cloud AI Research — 谷歌云AI研究部门，在大规模预训练、多模态模型与AI基础设施方面具备顶尖工业研究能力。',
+  'Institute of Foundation Models':       '基础模型研究院（IFM）— 专注通用基础模型的新兴研究机构，成长速度极快，跨机构合作比例居全球前列。',
+  'ByteDance':                            '字节跳动 — 全球头部互联网科技公司，旗下Seed团队在视频生成、语言模型与多模态AI方向持续产出高水平研究成果。',
+  'METR':                                 'METR（模型评估与威胁研究）— 专注前沿AI安全评估的独立研究机构，致力于对齐、红队测试与风险量化。',
+  'Microsoft Research':                   '微软研究院 — 全球规模最大的工业AI研究机构之一，在基础模型、代码智能与负责任AI方向拥有极强的论文影响力。',
+  'National University of Singapore':     '新加坡国立大学（NUS）— 东南亚顶尖理工大学，在NLP、计算机视觉与AI医疗方向具备较强国际竞争力。',
+  'Tsinghua University':                  '清华大学 — 中国论文总产出最高的顶级高校，ChatGLM、THUDM等大模型项目享誉全球，AI人才储备极为雄厚。',
+  'University of Hong Kong':              '香港大学（HKU）— 香港头部综合性研究型大学，在计算机视觉、AI医疗与可信AI方向具有稳定的国际发表能力。',
+  'Tencent':                              '腾讯 — 国内头部科技巨头，混元大模型团队在多模态生成、NLP与游戏AI方向持续深耕，工业合作覆盖面广。',
+  'Apple':                                'Apple — 全球顶级消费科技公司，在端侧AI、隐私保护机器学习与视觉语言模型方向保持高质量的学术产出。',
+  'Nanyang Technological University':     '南洋理工大学（NTU）— 新加坡顶尖理工强校，在计算机视觉、自动驾驶与AI可解释性方向持续贡献高影响力研究。',
+};
+
+function getInstDesc(name: string, papers: number, scholars: number): string {
+  // 优先精确匹配
+  if (INST_DESC_ZH[name]) return INST_DESC_ZH[name];
+  // 模糊匹配（JSON key 含在名称里 or 名称含在 key 里）
+  const lc = name.toLowerCase();
+  for (const [key, desc] of Object.entries(INST_DESC_ZH)) {
+    const klc = key.toLowerCase();
+    if (lc.includes(klc) || klc.includes(lc) ||
+        key.split(' ').some(w => w.length > 4 && lc.includes(w.toLowerCase()))) {
+      return desc;
+    }
+  }
+  // 通用中文兜底
+  return `${name} — 共发表 ${papers} 篇AI领域论文，拥有 ${scholars} 名活跃研究人员。`;
+}
+
 // ── Convert raw aggregated data → Institution object ─────────────────────────
 const FUNDING_STATUSES = ['Invested', 'Funded', 'Public', 'Internal', 'Non-Profit'] as const;
 function rawToInstitution(
@@ -240,19 +336,22 @@ function rawToInstitution(
   const fundingTrend = ['2021', '2022', '2023', '2024', '2025'].map((year, i) => ({
     year, label: '', amount: Math.round(papers * (0.6 + i * 0.18) * 8),
   }));
-  const influenceScores = [
-    { label: 'Research Output', value: Math.min(100, papers * 6),       fullMark: 100 },
-    { label: 'Talent Pool',     value: Math.min(100, scholars * 12),     fullMark: 100 },
-    { label: 'Global Impact',   value: Math.min(100, Math.round(score * 2.5)), fullMark: 100 },
-    { label: 'Innovation',      value: Math.min(100, hotness),           fullMark: 100 },
-    { label: 'Collaboration',   value: Math.min(100, scholars * 6),      fullMark: 100 },
-  ];
+  const jsonEntry = findInstJSON(name);
+  const influenceScores = jsonEntry
+    ? jsonToInstRadar(jsonEntry)
+    : [
+        { label: 'Research Output', value: Math.min(100, papers * 6),            fullMark: 100 },
+        { label: 'Talent Pool',     value: Math.min(100, scholars * 12),          fullMark: 100 },
+        { label: 'Global Impact',   value: Math.min(100, Math.round(score * 2.5)), fullMark: 100 },
+        { label: 'Innovation',      value: Math.min(100, hotness),                fullMark: 100 },
+        { label: 'Collaboration',   value: Math.min(100, scholars * 6),           fullMark: 100 },
+      ];
   return {
     id: `inst_real_${index}`,
     name,
     logo: name.slice(0, 2).toUpperCase(),
     region,
-    description: `${name} — ${papers} papers · ${scholars} active researchers in the AI domain.`,
+    description: getInstDesc(name, papers, scholars),
     website: `https://scholar.google.com/scholar?q=${encodeURIComponent(name)}`,
     staffCount: `${Math.max(scholars * 8, 50)}+`,
     articleCount: papers,

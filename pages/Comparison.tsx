@@ -306,16 +306,75 @@ const SCHOLAR_TRAJ_SCORES: Record<string, number[]> = {
   'Badr AlKhamissi': [79,82,84,91],
 };
 
+// ─── 维度分解轨迹常量 ──────────────────────────────────────────────────────────
+// 算法权重：产出20% + 学术25% + 主导15% + 趋势15% + 合作10% + 社区15%
+type TrajDim = 'composite' | 'output' | 'academic' | 'domain' | 'trend' | 'collab' | 'community';
+
+export const DIM_CONFIG: { key: TrajDim; label: string; color: string; weight: string }[] = [
+  { key: 'composite', label: '综合',  color: '#06b6d4', weight: '100%' },
+  { key: 'output',    label: '产出',  color: '#8b5cf6', weight: '20%'  },
+  { key: 'academic',  label: '学术',  color: '#10b981', weight: '25%'  },
+  { key: 'domain',    label: '主导',  color: '#f59e0b', weight: '15%'  },
+  { key: 'trend',     label: '趋势',  color: '#ec4899', weight: '15%'  },
+  { key: 'collab',    label: '合作',  color: '#3b82f6', weight: '10%'  },
+  { key: 'community', label: '社区',  color: '#f97316', weight: '15%'  },
+];
+
+// Scholar 维度分解（4 时间点：2025-11 ~ 2026-02）
+const SCHOLAR_DIM_SCORES: Record<string, Record<TrajDim, number[]>> = {
+  'Soeren Arlt': {
+    composite: [68,72,77,81],
+    output:    [45,48,51,54],  // papers=15, recent3y=11 — 新兴但体量小
+    academic:  [35,37,39,42],  // citations=110, hindex=6 — 早期积累
+    domain:    [72,74,76,78],  // binding=85, top_ratio=35 — 领域绑定强
+    trend:     [78,82,85,88],  // emerging_ratio=85%, entry=2023 — 极早进入
+    collab:    [60,62,65,68],  // coauthors=28, cross_inst=75%
+    community: [55,59,63,68],  // social=85, media=7
+  },
+  'Badr AlKhamissi': {
+    composite: [79,82,84,91],
+    output:    [65,68,71,74],  // papers=35, recent3y=19 — 活跃产出
+    academic:  [70,72,74,77],  // citations=900, hindex=14 — 较高学术影响
+    domain:    [66,68,70,73],  // binding=82, top_ratio=28
+    trend:     [64,67,70,74],  // emerging_ratio=70%, entry=2021
+    collab:    [64,66,68,71],  // coauthors=45, cross_inst=65%
+    community: [80,83,85,90],  // social=210, media=12 — 社区影响突出
+  },
+};
+
+// Institution 维度分解（12 时间点：2025-03 ~ 2026-02）
+const INST_DIM_SCORES: Record<string, Record<TrajDim, number[]>> = {
+  'KAUST': {
+    composite: [75,77,79,81,82,84,85,87,88,90,92,94],
+    output:    [62,64,65,67,68,70,72,74,75,77,79,82],  // papers=62, growth=22%
+    academic:  [65,67,68,70,71,73,74,76,77,79,81,85],  // citations=1850
+    domain:    [62,63,65,66,68,69,71,72,74,76,78,82],  // talent=16, ratio=24
+    trend:     [80,82,83,84,85,86,87,88,89,91,93,95],  // tech_leadership=95
+    collab:    [62,63,64,66,67,68,69,71,72,74,76,78],  // coop=32%, enterprise=28
+    community: [68,70,71,72,74,75,77,78,80,82,84,88],  // intl=58, network=92
+  },
+  'EPFL': {
+    composite: [80,81,82,82,83,84,84,85,86,87,88,89],
+    output:    [78,79,80,80,81,82,82,83,84,85,86,90],  // papers=78, growth=15%
+    academic:  [82,83,83,84,85,85,86,87,88,89,90,92],  // citations=2450
+    domain:    [62,63,64,64,65,66,67,68,69,70,71,74],  // talent=12, ratio=21
+    trend:     [76,77,78,78,79,80,80,81,82,83,84,86],  // tech_leadership=88
+    collab:    [64,65,65,66,67,68,68,69,70,72,74,76],  // coop=28%, enterprise=35
+    community: [74,75,76,76,77,78,78,79,80,81,82,84],  // intl=62, network=90
+  },
+};
+
 export const Comparison: React.FC = () => {
   const { data: papersData } = usePapers();
   const { data: scholarsData } = useScholars();
 
-  const [mode, setMode] = useState<CompareMode>('region');
-  const [itemA, setItemA] = useState<string>('');
-  const [itemB, setItemB] = useState<string>('');
+  const [mode, setMode] = useState<CompareMode>('institution');
+  const [itemA, setItemA] = useState<string>(PINNED_INSTITUTION_DATA[0].name);
+  const [itemB, setItemB] = useState<string>(PINNED_INSTITUTION_DATA[1].name);
   const [activeMetric] = useState<string>('papers');
   const [raceYear, setRaceYear] = useState(2025);
   const [hoveredEntity, setHoveredEntity] = useState<string | null>(null);
+  const [trajDim, setTrajDim] = useState<TrajDim>('composite');
 
   // ─── Region entities ────────────────────────────────────────────────────────
   const regionEntities = useMemo((): CompEntity[] => {
@@ -549,6 +608,7 @@ export const Comparison: React.FC = () => {
   // 同步切换 mode + 默认选项，避免异步 effect 导致空白帧
   const handleModeChange = (m: CompareMode) => {
     setMode(m);
+    setTrajDim('composite'); // 切换模式时重置维度
     if (m === 'scholar') {
       setItemA(PINNED_SCHOLAR_DATA[0].name);
       setItemB(PINNED_SCHOLAR_DATA[1].name);
@@ -573,10 +633,13 @@ export const Comparison: React.FC = () => {
   const trendData = useMemo(() => {
     if (!entityA || !entityB) return [];
 
-    // institution 模式：直接使用内联数据
+    // institution 模式
     if (mode === 'institution') {
-      const scoresA = INST_TRAJ_SCORES[entityA.name];
-      const scoresB = INST_TRAJ_SCORES[entityB.name];
+      // 优先使用维度分解数据
+      const dimA = INST_DIM_SCORES[entityA.name]?.[trajDim];
+      const dimB = INST_DIM_SCORES[entityB.name]?.[trajDim];
+      const scoresA = dimA ?? INST_TRAJ_SCORES[entityA.name];
+      const scoresB = dimB ?? INST_TRAJ_SCORES[entityB.name];
       if (scoresA || scoresB) {
         return INST_TRAJ_MONTHS.map((t, i) => ({
           time: t,
@@ -592,10 +655,12 @@ export const Comparison: React.FC = () => {
       }));
     }
 
-    // scholar 模式：直接使用内联数据
+    // scholar 模式
     if (mode === 'scholar') {
-      const scoresA = SCHOLAR_TRAJ_SCORES[entityA.name];
-      const scoresB = SCHOLAR_TRAJ_SCORES[entityB.name];
+      const dimA = SCHOLAR_DIM_SCORES[entityA.name]?.[trajDim];
+      const dimB = SCHOLAR_DIM_SCORES[entityB.name]?.[trajDim];
+      const scoresA = dimA ?? SCHOLAR_TRAJ_SCORES[entityA.name];
+      const scoresB = dimB ?? SCHOLAR_TRAJ_SCORES[entityB.name];
       if (scoresA || scoresB) {
         return SCHOLAR_TRAJ_MONTHS.map((t, i) => ({
           time: t,
@@ -668,7 +733,7 @@ export const Comparison: React.FC = () => {
 
     // region fallback: should not reach here, but guard
     return [];
-  }, [entityA, entityB, mode]);
+  }, [entityA, entityB, mode, trajDim]);
 
   // ─── Horse race data — 只展示选中的两个对比项 ──────────────────────────────
   const horseRaceData = useMemo(() => {
@@ -699,7 +764,7 @@ export const Comparison: React.FC = () => {
       {/* Node Selection Hub */}
       <div className="glass p-10 rounded-[40px] border border-[var(--border-color)] flex flex-col xl:flex-row justify-between items-center gap-12">
         <div className="flex bg-slate-100 dark:bg-slate-900/80 p-2 rounded-2xl border border-[var(--border-color)] self-start xl:self-center">
-          {(['region', 'institution', 'scholar'] as CompareMode[]).map(m => (
+          {(['institution', 'scholar', 'region'] as CompareMode[]).map(m => (
             <button
               key={m}
               onClick={() => handleModeChange(m)}
@@ -852,22 +917,44 @@ export const Comparison: React.FC = () => {
       </div>
 
       {/* Trajectory Convergence Area */}
-      <div className="glass p-12 rounded-[60px] border border-[var(--border-color)] h-[600px] flex flex-col">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
-          <h3 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-5">
-            <div className="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-500 dark:text-indigo-400 border border-indigo-500/20">
-              <i className="fa-solid fa-microchip text-2xl" />
+      <div className="glass p-12 rounded-[60px] border border-[var(--border-color)] h-[700px] flex flex-col">
+        <div className="flex flex-col gap-6 mb-8">
+          {/* Title row */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-5">
+              <div className="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-500 dark:text-indigo-400 border border-indigo-500/20">
+                <i className="fa-solid fa-microchip text-2xl" />
+              </div>
+              Trajectory Convergence Matrix
+            </h3>
+            <div className="px-4 py-2 bg-slate-100 dark:bg-white/5 rounded-xl border border-[var(--border-color)] text-[10px] text-[var(--text-dim)] font-black mono uppercase">
+              {mode === 'region'
+                ? 'Annual Output · Papers + News Signal (2020 – 2026)'
+                : trajDim === 'composite'
+                  ? 'Composite Influence Score · 产出 + 学术 + 主导 + 趋势 + 合作 + 社区'
+                  : `${DIM_CONFIG.find(d => d.key === trajDim)?.label} 维度轨迹`}
             </div>
-            Trajectory Convergence Matrix
-          </h3>
-          <div className="px-4 py-2 bg-slate-100 dark:bg-white/5 rounded-xl border border-[var(--border-color)] text-[10px] text-[var(--text-dim)] font-black mono uppercase">
-            {mode === 'region'
-              ? 'Annual Output · Papers + News Signal (2020 – 2026)'
-              : (mode === 'institution' && (INST_TRAJ_SCORES[entityA?.name ?? ''] || INST_TRAJ_SCORES[entityB?.name ?? '']))
-                  || (mode === 'scholar' && (SCHOLAR_TRAJ_SCORES[entityA?.name ?? ''] || SCHOLAR_TRAJ_SCORES[entityB?.name ?? '']))
-                ? 'Composite Influence Score · 产出20% + 学术25% + 主导15% + 趋势15% + 合作10% + 社区15%'
-                : 'Monthly Paper Output · Scaled'}
           </div>
+
+          {/* Dimension selector — only for scholar/institution mode */}
+          {(mode === 'scholar' || mode === 'institution') && (
+            <div className="flex flex-wrap gap-2">
+              {DIM_CONFIG.map(dim => (
+                <button
+                  key={dim.key}
+                  onClick={() => setTrajDim(dim.key)}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border ${
+                    trajDim === dim.key
+                      ? 'text-white shadow-md'
+                      : 'border-slate-300 dark:border-slate-700 text-slate-500 hover:border-slate-400 dark:hover:border-slate-500'
+                  }`}
+                  style={trajDim === dim.key ? { backgroundColor: dim.color, borderColor: dim.color } : {}}
+                >
+                  {dim.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex-1 min-h-0">
           <ResponsiveContainer width="100%" height="100%">
@@ -878,8 +965,8 @@ export const Comparison: React.FC = () => {
                   <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorB" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ec4899" stopOpacity={0.5} />
-                  <stop offset="95%" stopColor="#ec4899" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.5} />
+                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="5 5" stroke="var(--border-color)" vertical={false} />
@@ -892,10 +979,10 @@ export const Comparison: React.FC = () => {
               />
               <Legend verticalAlign="top" height={44} iconType="rect" iconSize={10}
                 wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', color: 'var(--text-dim)' }} />
-              <Area type="monotone" dataKey={entityA.name} stroke="#06b6d4" strokeWidth={5}
-                fillOpacity={1} fill="url(#colorA)" animationDuration={2000} />
-              <Area type="monotone" dataKey={entityB.name} stroke="#ec4899" strokeWidth={5}
-                fillOpacity={1} fill="url(#colorB)" animationDuration={2000} />
+              <Area type="monotone" dataKey={entityA.name}
+                stroke="#06b6d4" strokeWidth={5} fillOpacity={1} fill="url(#colorA)" animationDuration={2000} />
+              <Area type="monotone" dataKey={entityB.name}
+                stroke="#ef4444" strokeWidth={5} fillOpacity={1} fill="url(#colorB)" animationDuration={2000} />
             </AreaChart>
           </ResponsiveContainer>
         </div>

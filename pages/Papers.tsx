@@ -37,6 +37,48 @@ function paperTier(hotness: number, journal: string, awards: string[]): number {
 }
 
 // ── CSV → Paper adapter ──────────────────────────────────────────────────────
+// ── 中文摘要映射（按论文标题关键词匹配） ─────────────────────────────────────────
+const PAPER_ABSTRACT_ZH: [string, string][] = [
+  ['Less is More: Recursive Reasoning',
+    '提出"递归推理"框架，通过极小规模网络实现媲美大模型的复杂推理能力，证明参数量并非决定智能上限的唯一因素，为端侧高效推理提供了全新范式。'],
+  ['Skywork Open Reasoner',
+    '发布 Skywork Open Reasoner 1 技术报告，基于大规模强化学习训练，在数学、代码与逻辑推理多个基准上取得开源顶级性能，系统阐述了训练流程与关键发现。'],
+  ['Gemini 2.5',
+    '谷歌 Gemini 2.5 技术报告，在多模态理解、长上下文推理与代码生成方面取得重大突破，高级推理能力在多项国际基准中刷新最优纪录。'],
+  ['Querying Databases with Function Calling',
+    '探索利用大语言模型函数调用机制直接查询结构化数据库，无需生成 SQL，实现自然语言到数据库操作的端到端映射，显著降低了 Text-to-SQL 的门槛。'],
+  ['DeepSeek-R1',
+    'DeepSeek-R1 技术报告：通过强化学习激励大模型的推理能力，无需人工标注推理链即可涌现出复杂的链式思维，在数学与编程任务上达到业界顶尖水平。'],
+  ['Video models are zero-shot learners',
+    '证明在图像数据上预训练的视觉模型可以无需微调直接泛化到视频理解任务，揭示了视觉表征的跨模态零样本迁移能力，为视频AI提供了高效的预训练策略。'],
+  ['Qwen2.5-VL Technical Report',
+    'Qwen2.5-VL 技术报告：阿里通义视觉语言大模型最新版本，在视觉问答、文档理解与多图推理方面大幅提升，引入动态分辨率训练与增强的视觉编码架构。'],
+  ['Survey of Reinforcement Learning for Large Reasoning',
+    '系统综述强化学习在提升大模型推理能力方面的最新进展，涵盖奖励设计、策略优化与多步推理训练方法，是 RL for LLM 领域的权威参考文献。'],
+  ['Proof or Bluff',
+    '以 2025 年美国数学奥林匹克题目为测试集，系统评估当前主流大模型的数学证明能力，区分真正的逻辑推导与表面形式的"幻觉式"证明，揭示了现有模型的核心局限。'],
+  ['Early science acceleration experiments with GPT-5',
+    '报告 GPT-5 在科学研究加速方面的早期实验结果，展示大模型在文献综述、假说生成与实验设计上的辅助潜力，探讨 AI 作为"科学加速器"的可行路径。'],
+  ['Reinforcement Learning for Reasoning in Small LLMs',
+    '聚焦小参数量语言模型的强化学习推理训练，系统分析哪些技术在资源受限场景下真正有效，为端侧与低成本推理模型的研发提供了经验指导。'],
+  ['Reinforcement Learning for Reasoning in Large Language',
+    '全面梳理强化学习在大语言模型推理增强领域的研究进展，涵盖 RLHF、GRPO、PPO 等主流算法的对比分析，是该领域最具代表性的综述之一。'],
+  ['Survey on Post-training of Large Language Models',
+    '对大语言模型后训练技术进行全面综述，系统梳理指令微调、对齐学习、强化学习反馈等核心方法，并分析各类技术在安全性与能力提升方面的权衡关系。'],
+  ['Kimi k1.5',
+    'Kimi k1.5 技术报告：月之暗面通过大规模强化学习扩展 LLM 推理能力，在长链思维与多步推理方面实现显著突破，系统介绍了训练框架与扩展规律。'],
+  ['Sequential Diagnosis with Language Models',
+    '提出基于语言模型的序列化诊断框架，模拟医生多轮问询的临床思维，在医学诊断准确率和可解释性方面均优于传统单次预测方法，具有重要的医疗 AI 应用价值。'],
+];
+
+function findPaperAbstractZh(title: string): string {
+  const lc = title.toLowerCase();
+  for (const [key, desc] of PAPER_ABSTRACT_ZH) {
+    if (lc.includes(key.toLowerCase())) return desc;
+  }
+  return '';
+}
+
 function csvToPaper(p: CSVPaper, index: number, maxHotness: number): Paper {
   const displayHotness = (p.hotness ?? 0) * 10; // 要求：热度字段 × 10 展示
   const impactFactor   = computeImpactFactor(p.hotness ?? 0, maxHotness, p.journal, p.awards);
@@ -58,7 +100,7 @@ function csvToPaper(p: CSVPaper, index: number, maxHotness: number): Paper {
     tags: [p.keyword, ...(p.relatedKeywords.slice(0, 2))].filter(Boolean),
     venue: p.journal || 'arXiv',
     journal: p.journal,
-    abstract: '',
+    abstract: findPaperAbstractZh(p.title),
     url: p.url,
   };
 }
@@ -158,7 +200,7 @@ const PaperCard: React.FC<{ paper: Paper }> = ({ paper }) => {
         {/* abstract/intro - prominently displayed as requested */}
         <div className="bg-slate-50 dark:bg-slate-900/60 p-4 rounded-2xl border border-[var(--border-color)] shadow-inner">
           <p className="text-[11px] text-slate-600 dark:text-slate-300 line-clamp-4 leading-relaxed italic">
-            {paper.abstract || "The abstract for this breakthrough research defines the foundational limits of the technology explored, establishing a new paradigm for intelligence sync."}
+            {paper.abstract || "本研究在所属技术方向上取得突破性进展，系统阐述了核心方法论与实验验证，为该领域后续研究奠定了重要基础。"}
           </p>
         </div>
 
@@ -351,7 +393,8 @@ export const Papers: React.FC = () => {
   const [activeSort, setActiveSort] = useState<SortOption>(SortOption.INFLUENCE);
   const [selectedKeyword, setSelectedKeyword] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeKeyword, setActiveKeyword] = useState(KEYWORDS_LIST[0]);
+  const [activeKeyword, setActiveKeyword] = useState('OpenClaw');
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // 切换关键词时重置分页和筛选
   useEffect(() => { setShowCount(6); setSelectedKeyword('All'); }, [activeKeyword]);
@@ -419,7 +462,7 @@ export const Papers: React.FC = () => {
       {/* Dynamic Keyword Header */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-[var(--border-color)] pb-8 gap-4 px-4">
         <div className="relative">
-          <KeywordSwitcher keywords={KEYWORDS_LIST} value={activeKeyword} onChange={setActiveKeyword} accent="indigo" />
+          <KeywordSwitcher keywords={['OpenClaw', 'Seedance 2.0']} value={activeKeyword} onChange={setActiveKeyword} accent="indigo" />
           <p className="text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-[0.4em] text-[10px] mt-2">Discovery of Breakthrough Manuscripts</p>
         </div>
         <div className="flex gap-4 items-center">
@@ -433,76 +476,96 @@ export const Papers: React.FC = () => {
         </div>
       </header>
 
-      {/* Advanced Filter Matrix */}
-      <div className="glass p-8 rounded-[40px] border border-[var(--border-color)] flex flex-col gap-8 mx-4">
-        <div className="flex flex-wrap gap-8 items-end justify-between">
-          
-          {/* Time Sync */}
-          <div className="space-y-4 flex-1 min-w-[300px]">
-             <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block">Custom Temporal Window</label>
-             <div className="flex flex-wrap items-center gap-4 bg-slate-100 dark:bg-slate-900/40 p-4 rounded-3xl border border-[var(--border-color)] shadow-inner">
-               <div className="flex items-center gap-2">
-                 <select value={startYear} onChange={e => setStartYear(Number(e.target.value))} className="bg-white dark:bg-slate-950 border border-[var(--border-color)] text-xs font-bold text-indigo-600 dark:text-indigo-400 rounded-lg px-3 py-1.5 outline-none">
-                    {years.map(y => <option key={y} value={y}>{y}Y</option>)}
-                 </select>
-                 <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))} className="bg-white dark:bg-slate-950 border border-[var(--border-color)] text-xs font-bold text-indigo-600 dark:text-indigo-400 rounded-lg px-3 py-1.5 outline-none">
-                    {months.map(m => <option key={m} value={m}>{m}M</option>)}
-                 </select>
-               </div>
-               <span className="text-slate-600 dark:text-slate-400 font-bold text-xs uppercase">To</span>
-               <div className="flex items-center gap-2">
-                 <select value={endYear} onChange={e => setEndYear(Number(e.target.value))} className="bg-white dark:bg-slate-950 border border-[var(--border-color)] text-xs font-bold text-indigo-600 dark:text-indigo-400 rounded-lg px-3 py-1.5 outline-none">
-                    {years.map(y => <option key={y} value={y}>{y}Y</option>)}
-                 </select>
-                 <select value={endMonth} onChange={e => setEndMonth(Number(e.target.value))} className="bg-white dark:bg-slate-950 border border-[var(--border-color)] text-xs font-bold text-indigo-600 dark:text-indigo-400 rounded-lg px-3 py-1.5 outline-none">
-                    {months.map(m => <option key={m} value={m}>{m}M</option>)}
-                 </select>
-               </div>
-             </div>
+      {/* Advanced Filter Matrix — Collapsible */}
+      <div className="glass rounded-[28px] border border-[var(--border-color)] mx-4 overflow-hidden">
+        {/* Toggle header */}
+        <button
+          onClick={() => setFiltersOpen(o => !o)}
+          className="w-full flex items-center justify-between px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <i className="fa-solid fa-sliders text-indigo-500 text-xs" />
+            <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">Filters</span>
+            <span className="text-[10px] text-slate-400 font-bold ml-2">
+              {activeSort} · {selectedKeyword === 'All' ? 'All Keywords' : selectedKeyword}
+            </span>
           </div>
+          <i className={`fa-solid fa-chevron-down text-[10px] text-slate-400 transition-transform duration-200 ${filtersOpen ? 'rotate-180' : ''}`} />
+        </button>
 
-          {/* Core Sort */}
-          <div className="space-y-4">
-             <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block">Metric Optimization</label>
-             <div className="flex gap-2 bg-slate-100 dark:bg-slate-900/60 p-1.5 rounded-2xl border border-[var(--border-color)]">
-               {['INFLUENCE', 'CITATIONS', 'HOTNESS', 'RECENCY'].map(opt => (
-                 <button 
-                  key={opt}
-                  onClick={() => setActiveSort(opt as SortOption)}
-                  className={`px-4 py-2 rounded-xl text-[9px] font-black transition-all ${activeSort === opt ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}
-                 >
-                   {opt}
-                 </button>
-               ))}
-             </div>
-          </div>
+        {/* Collapsible content */}
+        {filtersOpen && (
+          <div className="px-6 pb-6 border-t border-[var(--border-color)] pt-5 flex flex-col gap-6">
+            <div className="flex flex-wrap gap-8 items-end justify-between">
 
-          {/* 关键词筛选（真实数据） */}
-          <div className="flex gap-4">
-            <div className="space-y-2">
-              <label className="text-[10px] text-slate-600 font-black uppercase">Keyword</label>
-              <select
-                value={selectedKeyword}
-                onChange={e => setSelectedKeyword(e.target.value)}
-                className="bg-slate-100 dark:bg-slate-900 border border-[var(--border-color)] rounded-xl px-4 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none"
-              >
-                {keywordOptions.map(k => <option key={k} value={k}>{k === 'All' ? 'All Keywords' : k}</option>)}
-              </select>
+              {/* Time Sync */}
+              <div className="space-y-4 flex-1 min-w-[300px]">
+                <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block">Custom Temporal Window</label>
+                <div className="flex flex-wrap items-center gap-4 bg-slate-100 dark:bg-slate-900/40 p-4 rounded-3xl border border-[var(--border-color)] shadow-inner">
+                  <div className="flex items-center gap-2">
+                    <select value={startYear} onChange={e => setStartYear(Number(e.target.value))} className="bg-white dark:bg-slate-950 border border-[var(--border-color)] text-xs font-bold text-indigo-600 dark:text-indigo-400 rounded-lg px-3 py-1.5 outline-none">
+                      {years.map(y => <option key={y} value={y}>{y}Y</option>)}
+                    </select>
+                    <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))} className="bg-white dark:bg-slate-950 border border-[var(--border-color)] text-xs font-bold text-indigo-600 dark:text-indigo-400 rounded-lg px-3 py-1.5 outline-none">
+                      {months.map(m => <option key={m} value={m}>{m}M</option>)}
+                    </select>
+                  </div>
+                  <span className="text-slate-600 dark:text-slate-400 font-bold text-xs uppercase">To</span>
+                  <div className="flex items-center gap-2">
+                    <select value={endYear} onChange={e => setEndYear(Number(e.target.value))} className="bg-white dark:bg-slate-950 border border-[var(--border-color)] text-xs font-bold text-indigo-600 dark:text-indigo-400 rounded-lg px-3 py-1.5 outline-none">
+                      {years.map(y => <option key={y} value={y}>{y}Y</option>)}
+                    </select>
+                    <select value={endMonth} onChange={e => setEndMonth(Number(e.target.value))} className="bg-white dark:bg-slate-950 border border-[var(--border-color)] text-xs font-bold text-indigo-600 dark:text-indigo-400 rounded-lg px-3 py-1.5 outline-none">
+                      {months.map(m => <option key={m} value={m}>{m}M</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Core Sort */}
+              <div className="space-y-4">
+                <label className="text-[10px] text-slate-500 font-black uppercase tracking-widest block">Metric Optimization</label>
+                <div className="flex gap-2 bg-slate-100 dark:bg-slate-900/60 p-1.5 rounded-2xl border border-[var(--border-color)]">
+                  {['INFLUENCE', 'CITATIONS', 'HOTNESS', 'RECENCY'].map(opt => (
+                    <button
+                      key={opt}
+                      onClick={() => setActiveSort(opt as SortOption)}
+                      className={`px-4 py-2 rounded-xl text-[9px] font-black transition-all ${activeSort === opt ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 关键词筛选 */}
+              <div className="flex gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] text-slate-600 font-black uppercase">Keyword</label>
+                  <select
+                    value={selectedKeyword}
+                    onChange={e => setSelectedKeyword(e.target.value)}
+                    className="bg-slate-100 dark:bg-slate-900 border border-[var(--border-color)] rounded-xl px-4 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none"
+                  >
+                    {keywordOptions.map(k => <option key={k} value={k}>{k === 'All' ? 'All Keywords' : k}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Keyword Search */}
+            <div className="relative">
+              <i className="fa-solid fa-magnifying-glass absolute left-6 top-1/2 -translate-y-1/2 text-slate-500"></i>
+              <input
+                type="text"
+                placeholder="Search by keyword, author, or breakthrough title..."
+                className="w-full bg-slate-100 dark:bg-slate-950 border border-[var(--border-color)] rounded-3xl py-4 pl-14 pr-6 text-sm font-bold text-slate-900 dark:text-white focus:border-indigo-500/50 transition-all outline-none"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
             </div>
           </div>
-        </div>
-
-        {/* Keyword Search */}
-        <div className="relative">
-          <i className="fa-solid fa-magnifying-glass absolute left-6 top-1/2 -translate-y-1/2 text-slate-500"></i>
-          <input 
-            type="text" 
-            placeholder="Search by keyword, author, or breakthrough title..."
-            className="w-full bg-slate-100 dark:bg-slate-950 border border-[var(--border-color)] rounded-3xl py-4 pl-14 pr-6 text-sm font-bold text-slate-900 dark:text-white focus:border-indigo-500/50 transition-all outline-none"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-        </div>
+        )}
       </div>
 
       {/* 1. Paper Cards Grid - Positioned below filter */}
