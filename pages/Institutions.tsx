@@ -33,7 +33,7 @@ const InstitutionCard: React.FC<{ institution: Institution; rank: number }> = ({
                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
               </div>
               <div className="min-w-0">
-                <h3 className="text-base font-black text-slate-900 dark:text-white leading-tight group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors line-clamp-2 break-words">{institution.name}</h3>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white leading-tight group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors line-clamp-2 break-words" title={institution.name}>{institution.name}</h3>
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1 flex items-center gap-2">
                    <i className="fa-solid fa-location-dot"></i> {institution.region}
                 </p>
@@ -275,8 +275,7 @@ function rawToInstitution(
 
 export const Institutions: React.FC = () => {
   const [filterRegion, setFilterRegion] = useState('All');
-  const INST_KEYWORDS = ['OpenClaw', 'Seedance 2.0'];
-  const [activeKeyword, setActiveKeyword] = useState(INST_KEYWORDS[0]);
+  const [activeKeyword, setActiveKeyword] = useState('OpenClaw');
   const [sortBy, setSortBy] = useState<'hotness' | 'funding' | 'research' | 'product'>('hotness');
 
   const { data: papersData, loading: papersLoading } = usePapers();
@@ -344,7 +343,7 @@ export const Institutions: React.FC = () => {
       {/* Header Area */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-[var(--border-color)] pb-8 gap-6">
         <div className="relative">
-          <KeywordSwitcher keywords={INST_KEYWORDS} value={activeKeyword} onChange={setActiveKeyword} accent="emerald" />
+          <KeywordSwitcher keywords={['OpenClaw', 'Seedance 2.0']} value={activeKeyword} onChange={setActiveKeyword} accent="emerald" />
           <p className="text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-[0.4em] text-[10px] mt-2">Institutional Intelligence Matrix</p>
         </div>
         
