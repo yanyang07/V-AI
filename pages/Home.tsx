@@ -15,6 +15,20 @@ const CategoryColorMap: Record<HotWordCategory, string> = {
   'Product': '#ec4899'     
 };
 
+// ── 关键词级别的 KPI 静态数据（来自真实 CSV 统计）─────────────────────────────
+const KEYWORD_KPI: Record<string, {
+  papers: number; papersGrowth: string;
+  institutions: string;
+  news: number;
+}> = {
+  'Seedance 2.0': {
+    papers: 27,          // 2026年 Jan-Feb 实际论文数
+    papersGrowth: '-35.7% YoY',  // Jan-Feb 2026 vs 2025
+    institutions: '219', // Keyword_Paper_Map_v2 统计唯一机构数
+    news: 38,            // News_Keyword_Map.csv 统计
+  },
+};
+
 const MetricCard = ({ label, value, sub, color, onClick }: any) => (
   <div 
     onClick={onClick}
@@ -260,32 +274,43 @@ export const Home: React.FC<HomeProps> = ({ setActiveTab, initialKeyword, onKeyw
       </header>
 
       {/* KPI Section */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-        <MetricCard 
-          label="新增文献" 
-          value={papersData ? (Object.values(papersData.samplePapers) as any[][]).flat().length : 980}
-          sub="+21.5% MoM" 
-          color="cyan" 
-          onClick={() => setActiveTab?.('papers')}
-        />
-        <MetricCard label="增长动能" value="+21.5%" sub="High Velocity" color="emerald" />
-        <MetricCard 
-          label="相关融资" 
-          value="$366M" 
-          sub="+112% YoY" 
-          color="cyan"
-          onClick={handleFundingClick}
-        />
-        <MetricCard 
-          label="活跃机构" 
-          value="2.4K+" 
-          sub="Global Nodes" 
-          color="emerald" 
-          onClick={() => setActiveTab?.('institutions')}
-        />
-        <MetricCard label="新闻聚合" value="11k" sub="Real-time" color="cyan" />
-        <MetricCard label="引用影响" value={scholarsData ? `${(scholarsData.scholars.length * 0.4).toFixed(1)}K` : '82.0K'} sub="Impact High" color="emerald" />
-      </div>
+      {(() => {
+        const kpi = KEYWORD_KPI[activeKeyword];
+        const paperCount = kpi
+          ? kpi.papers
+          : papersData ? (Object.values(papersData.samplePapers) as any[][]).flat().length : 980;
+        const paperGrowth = kpi ? kpi.papersGrowth : '+21.5% MoM';
+        const instValue = kpi ? kpi.institutions : '2.4K+';
+        const newsValue = kpi ? kpi.news : '11k';
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+            <MetricCard
+              label="新增文献"
+              value={paperCount}
+              sub={paperGrowth}
+              color="cyan"
+              onClick={() => setActiveTab?.('papers')}
+            />
+            <MetricCard label="增长动能" value="+21.5%" sub="High Velocity" color="emerald" />
+            <MetricCard
+              label="相关融资"
+              value="$366M"
+              sub="+112% YoY"
+              color="cyan"
+              onClick={handleFundingClick}
+            />
+            <MetricCard
+              label="活跃机构"
+              value={instValue}
+              sub="Global Nodes"
+              color="emerald"
+              onClick={() => setActiveTab?.('institutions')}
+            />
+            <MetricCard label="新闻聚合" value={newsValue} sub="Real-time" color="cyan" />
+            <MetricCard label="引用影响" value={scholarsData ? `${(scholarsData.scholars.length * 0.4).toFixed(1)}K` : '82.0K'} sub="Impact High" color="emerald" />
+          </div>
+        );
+      })()}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Main Intelligence Chart */}
