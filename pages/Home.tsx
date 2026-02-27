@@ -151,7 +151,7 @@ interface HomeProps {
 export const Home: React.FC<HomeProps> = ({ setActiveTab, initialKeyword, onKeywordChange }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [chartMetric, setChartMetric] = useState('compositeIndex');
-  const [activeKeyword, setActiveKeyword] = useState(initialKeyword ?? KEYWORDS_LIST[0]);
+  const [activeKeyword, setActiveKeyword] = useState(initialKeyword ?? 'OpenClaw');
 
   // 当从 Landing 带着新关键词进入时，同步更新本地状态
   useEffect(() => {
@@ -240,7 +240,7 @@ export const Home: React.FC<HomeProps> = ({ setActiveTab, initialKeyword, onKeyw
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div className="flex flex-col gap-3">
             <div className="relative">
-              <KeywordSwitcher keywords={KEYWORDS_LIST} value={activeKeyword} onChange={(kw) => { setActiveKeyword(kw); onKeywordChange?.(kw); }} accent="cyan" />
+              <KeywordSwitcher keywords={['OpenClaw', 'Seedance 2.0']} value={activeKeyword} onChange={(kw) => { setActiveKeyword(kw); onKeywordChange?.(kw); }} accent="cyan" />
               <p className="text-cyan-600 dark:text-cyan-400 font-bold uppercase tracking-[0.4em] text-[10px] mt-1">Intelligence Dashboard</p>
             </div>
             <div
