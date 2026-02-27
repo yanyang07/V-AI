@@ -17,15 +17,15 @@ const CategoryColorMap: Record<HotWordCategory, string> = {
 
 // ── 关键词级别的 KPI 静态数据（来自真实 CSV 统计）─────────────────────────────
 const KEYWORD_KPI: Record<string, {
-  papers: number; papersGrowth: string;
+  papers: number | string; papersGrowth: string;
   institutions: string;
-  news: number;
+  news: number | string;
 }> = {
   'Seedance 2.0': {
-    papers: 27,          // 2026年 Jan-Feb 实际论文数
-    papersGrowth: '-35.7% YoY',  // Jan-Feb 2026 vs 2025
-    institutions: '219', // Keyword_Paper_Map_v2 统计唯一机构数
-    news: 38,            // News_Keyword_Map.csv 统计
+    papers: 572,
+    papersGrowth: '-35.7% YoY',
+    institutions: '219',
+    news: '9.8k',
   },
 };
 

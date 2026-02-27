@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { KEYWORDS_LIST } from '../constants';
 import { Paper, SortOption } from '../types';
 import { usePapers } from '../hooks/useData';
@@ -353,6 +353,9 @@ export const Papers: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeKeyword, setActiveKeyword] = useState(KEYWORDS_LIST[0]);
 
+  // 切换关键词时重置分页和筛选
+  useEffect(() => { setShowCount(6); setSelectedKeyword('All'); }, [activeKeyword]);
+
   // 加载真实论文数据
   const { data: papersData, loading: papersLoading } = usePapers();
 
@@ -362,13 +365,14 @@ export const Papers: React.FC = () => {
   const [endYear, setEndYear] = useState(2025);
   const [endMonth, setEndMonth] = useState(12);
 
-  // 将 CSV 数据转换成 Paper 格式
+  // 将 CSV 数据转换成 Paper 格式 — 按 activeKeyword 过滤
   const allPapers = useMemo<Paper[]>(() => {
     if (!papersData) return [];
-    const raw = (Object.values(papersData.samplePapers) as CSVPaper[][]).flat();
+    // 优先展示当前关键词的论文，fallback 到全部
+    const raw = ((papersData.samplePapers[activeKeyword] ?? Object.values(papersData.samplePapers).flat()) as CSVPaper[]);
     const maxHotness = Math.max(1, ...raw.map(p => p.hotness ?? 0));
     return raw.map((p, i) => csvToPaper(p, i, maxHotness));
-  }, [papersData]);
+  }, [papersData, activeKeyword]);
 
   // 关键词列表（用于筛选）
   const keywordOptions = useMemo(() => {

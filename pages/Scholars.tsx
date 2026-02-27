@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { KEYWORDS_LIST } from '../constants';
 import { Scholar, SortOption } from '../types';
 import { useScholars } from '../hooks/useData';
@@ -559,6 +559,8 @@ export const Scholars: React.FC = () => {
   const [activeSort, setActiveSort] = useState<SortOption>(SortOption.INFLUENCE);
   const [selectedRegion, setSelectedRegion] = useState('All');
   const [activeKeyword, setActiveKeyword] = useState(KEYWORDS_LIST[0]);
+  // 切换关键词时重置地区筛选
+  useEffect(() => { setSelectedRegion('All'); }, [activeKeyword]);
   const [detailScholar, setDetailScholar] = useState<Scholar | null>(null);
 
   // 加载真实学者数据
@@ -570,12 +572,18 @@ export const Scholars: React.FC = () => {
   const [endYear, setEndYear] = useState(2025);
   const [endMonth, setEndMonth] = useState(12);
 
-  // 将 CSV 数据转换成 Scholar 格式，loading 时退回 mock
+  // 将 CSV 数据转换成 Scholar 格式 — 按 activeKeyword 过滤
   const allScholars = useMemo<Scholar[]>(() => {
     if (!scholarsData) return [];
-    const maxPapers = Math.max(1, ...scholarsData.scholars.map(s => s.paperCount));
-    return scholarsData.scholars.map((s, i) => csvToScholar(s, i, maxPapers));
-  }, [scholarsData]);
+    // scholars.keywords 是逗号拼接字符串数组，检查是否包含当前关键词
+    const filtered = scholarsData.scholars.filter(s =>
+      s.keywords.some((k: string) => k.includes(activeKeyword))
+    );
+    // 至少保留 20 条，否则 fallback 到全部（避免某词关联学者太少时页面空白）
+    const pool = filtered.length >= 20 ? filtered : scholarsData.scholars;
+    const maxPapers = Math.max(1, ...pool.map(s => s.paperCount));
+    return pool.map((s, i) => csvToScholar(s, i, maxPapers));
+  }, [scholarsData, activeKeyword]);
 
   // 从真实数据中提取地区列表
   const regionOptions = useMemo(() => {

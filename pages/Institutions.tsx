@@ -33,7 +33,7 @@ const InstitutionCard: React.FC<{ institution: Institution; rank: number }> = ({
                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
               </div>
               <div className="min-w-0">
-                <h3 className="text-xl font-black text-slate-900 dark:text-white leading-tight group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors truncate">{institution.name}</h3>
+                <h3 className="text-base font-black text-slate-900 dark:text-white leading-tight group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors line-clamp-2 break-words">{institution.name}</h3>
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1 flex items-center gap-2">
                    <i className="fa-solid fa-location-dot"></i> {institution.region}
                 </p>
@@ -275,22 +275,27 @@ function rawToInstitution(
 
 export const Institutions: React.FC = () => {
   const [filterRegion, setFilterRegion] = useState('All');
-  const [activeKeyword, setActiveKeyword] = useState(KEYWORDS_LIST[0]);
+  const INST_KEYWORDS = ['OpenClaw', 'Seedance 2.0'];
+  const [activeKeyword, setActiveKeyword] = useState(INST_KEYWORDS[0]);
   const [sortBy, setSortBy] = useState<'hotness' | 'funding' | 'research' | 'product'>('hotness');
 
   const { data: papersData, loading: papersLoading } = usePapers();
 
-  // Build institutions from real paper data
+  // Build institutions from real paper data — filtered by activeKeyword
   const allInstitutions = useMemo<Institution[]>(() => {
     if (!papersData) return [];
+    // 只聚合当前关键词的论文；fallback 到全量（关键词数据不足时）
+    const keywordPapers = papersData.samplePapers[activeKeyword] as any[] | undefined;
+    const paperList: any[] = keywordPapers?.length
+      ? keywordPapers
+      : (Object.values(papersData.samplePapers) as any[][]).flat();
+
     const counts: Record<string, { papers: number; scholars: Set<string> }> = {};
-    for (const papers of Object.values(papersData.samplePapers)) {
-      for (const paper of papers as any[]) {
-        for (const inst of parseInstitutions(paper.institution ?? '')) {
-          if (!counts[inst]) counts[inst] = { papers: 0, scholars: new Set() };
-          counts[inst].papers++;
-          for (const a of (paper.authors ?? [])) counts[inst].scholars.add(a);
-        }
+    for (const paper of paperList) {
+      for (const inst of parseInstitutions(paper.institution ?? '')) {
+        if (!counts[inst]) counts[inst] = { papers: 0, scholars: new Set() };
+        counts[inst].papers++;
+        for (const a of (paper.authors ?? [])) counts[inst].scholars.add(a);
       }
     }
     const raw = Object.entries(counts)
@@ -300,7 +305,7 @@ export const Institutions: React.FC = () => {
       .slice(0, 40);
     const maxScore = Math.max(1, ...raw.map(r => r.papers + r.scholars * 0.5));
     return raw.map((r, i) => rawToInstitution(r.name, r.papers, r.scholars, i, maxScore));
-  }, [papersData]);
+  }, [papersData, activeKeyword]);
 
   // Regions derived from real data
   const regionOptions = useMemo(() => {
@@ -339,7 +344,7 @@ export const Institutions: React.FC = () => {
       {/* Header Area */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-[var(--border-color)] pb-8 gap-6">
         <div className="relative">
-          <KeywordSwitcher keywords={KEYWORDS_LIST} value={activeKeyword} onChange={setActiveKeyword} accent="emerald" />
+          <KeywordSwitcher keywords={INST_KEYWORDS} value={activeKeyword} onChange={setActiveKeyword} accent="emerald" />
           <p className="text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-[0.4em] text-[10px] mt-2">Institutional Intelligence Matrix</p>
         </div>
         
