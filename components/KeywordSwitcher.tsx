@@ -33,27 +33,10 @@ export const KeywordSwitcher: React.FC<Props> = ({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const prev = () => {
-    const idx = keywords.indexOf(value);
-    onChange(keywords[(idx - 1 + keywords.length) % keywords.length]);
-  };
-  const next = () => {
-    const idx = keywords.indexOf(value);
-    onChange(keywords[(idx + 1) % keywords.length]);
-  };
-
   return (
     <div ref={ref} className="flex flex-col gap-2">
-      {/* Title row: ← keyword → */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={prev}
-          className={`w-7 h-7 rounded-full border border-[var(--border-color)] flex items-center justify-center ${c.chevron} hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0`}
-          title="Previous keyword"
-        >
-          <i className="fa-solid fa-chevron-left text-[9px]"></i>
-        </button>
-
+      {/* Title row: keyword ▾ (no left/right arrows) */}
+      <div className="flex items-center gap-2">
         {/* Clickable title opens dropdown */}
         <button
           onClick={() => setOpen(o => !o)}
@@ -64,14 +47,6 @@ export const KeywordSwitcher: React.FC<Props> = ({
             {value}
           </h1>
           <i className={`fa-solid fa-caret-down text-sm mt-1 transition-transform duration-200 ${c.chevron} ${open ? 'rotate-180' : ''}`}></i>
-        </button>
-
-        <button
-          onClick={next}
-          className={`w-7 h-7 rounded-full border border-[var(--border-color)] flex items-center justify-center ${c.chevron} hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0`}
-          title="Next keyword"
-        >
-          <i className="fa-solid fa-chevron-right text-[9px]"></i>
         </button>
       </div>
 

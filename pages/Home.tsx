@@ -241,7 +241,7 @@ export const Home: React.FC<HomeProps> = ({ setActiveTab, initialKeyword, onKeyw
           <div className="flex flex-col gap-3">
             <div className="relative">
               <KeywordSwitcher keywords={['OpenClaw', 'Seedance 2.0']} value={activeKeyword} onChange={(kw) => { setActiveKeyword(kw); onKeywordChange?.(kw); }} accent="cyan" />
-              <p className="text-cyan-600 dark:text-cyan-400 font-bold uppercase tracking-[0.4em] text-[10px] mt-1">Intelligence Dashboard</p>
+              {/* Intelligence Dashboard label hidden */}
             </div>
             <div
               className="flex items-center gap-4 px-6 py-3 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl cursor-pointer group hover:scale-105 transition-all shadow-sm w-fit"
