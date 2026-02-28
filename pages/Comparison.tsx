@@ -308,8 +308,11 @@ const SCHOLAR_TRAJ_SCORES: Record<string, number[]> = {
 
 // ─── 维度分解轨迹常量 ──────────────────────────────────────────────────────────
 // 算法权重：产出20% + 学术25% + 主导15% + 趋势15% + 合作10% + 社区15%
-type TrajDim = 'composite' | 'output' | 'academic' | 'domain' | 'trend' | 'collab' | 'community';
+type TrajDim =
+  | 'composite' | 'output' | 'academic' | 'domain' | 'trend' | 'collab' | 'community'
+  | 'innovation' | 'network' | 'research' | 'talent' | 'impact' | 'growth';
 
+// Scholar 模式维度 tabs
 export const DIM_CONFIG: { key: TrajDim; label: string; color: string; weight: string }[] = [
   { key: 'composite', label: '综合',         color: '#06b6d4', weight: '100%' },
   { key: 'output',    label: '产出力',       color: '#8b5cf6', weight: '20%'  },
@@ -317,6 +320,17 @@ export const DIM_CONFIG: { key: TrajDim; label: string; color: string; weight: s
   { key: 'domain',    label: '领域主导力',   color: '#f59e0b', weight: '15%'  },
   { key: 'trend',     label: '趋势敏感',     color: '#ec4899', weight: '15%'  },
   { key: 'collab',    label: '合作影响半径', color: '#3b82f6', weight: '10%'  },
+];
+
+// Institution 模式维度 tabs
+const INST_DIM_CONFIG: { key: TrajDim; label: string; color: string; weight: string }[] = [
+  { key: 'composite',  label: '综合',       color: '#06b6d4', weight: '100%' },
+  { key: 'innovation', label: 'Innovation', color: '#8b5cf6', weight: '20%'  },
+  { key: 'network',    label: 'Network',    color: '#10b981', weight: '15%'  },
+  { key: 'research',   label: 'Research',   color: '#f59e0b', weight: '20%'  },
+  { key: 'talent',     label: 'Talent',     color: '#ec4899', weight: '15%'  },
+  { key: 'impact',     label: 'Impact',     color: '#3b82f6', weight: '15%'  },
+  { key: 'growth',     label: 'Growth',     color: '#f97316', weight: '15%'  },
 ];
 
 // Scholar 维度分解（4 时间点：2025-11 ~ 2026-02）
@@ -344,22 +358,34 @@ const SCHOLAR_DIM_SCORES: Record<string, Record<TrajDim, number[]>> = {
 // Institution 维度分解（12 时间点：2025-03 ~ 2026-02）
 const INST_DIM_SCORES: Record<string, Record<TrajDim, number[]>> = {
   'KAUST': {
-    composite: [75,77,79,81,82,84,85,87,88,90,92,94],
-    output:    [62,64,65,67,68,70,72,74,75,77,79,82],  // papers=62, growth=22%
-    academic:  [65,67,68,70,71,73,74,76,77,79,81,85],  // citations=1850
-    domain:    [62,63,65,66,68,69,71,72,74,76,78,82],  // talent=16, ratio=24
-    trend:     [80,82,83,84,85,86,87,88,89,91,93,95],  // tech_leadership=95
-    collab:    [62,63,64,66,67,68,69,71,72,74,76,78],  // coop=32%, enterprise=28
-    community: [68,70,71,72,74,75,77,78,80,82,84,88],  // intl=58, network=92
+    composite:  [75,77,79,81,82,84,85,87,88,90,92,94],
+    output:     [62,64,65,67,68,70,72,74,75,77,79,82],
+    academic:   [65,67,68,70,71,73,74,76,77,79,81,85],
+    domain:     [62,63,65,66,68,69,71,72,74,76,78,82],
+    trend:      [80,82,83,84,85,86,87,88,89,91,93,95],
+    collab:     [62,63,64,66,67,68,69,71,72,74,76,78],
+    community:  [68,70,71,72,74,75,77,78,80,82,84,88],
+    innovation: [80,82,83,84,85,86,87,88,89,91,93,95],
+    network:    [62,63,64,66,67,68,69,71,72,74,76,78],
+    research:   [65,67,68,70,71,73,74,76,77,79,81,85],
+    talent:     [62,63,65,66,68,69,71,72,74,76,78,82],
+    impact:     [68,70,71,72,74,75,77,78,80,82,84,88],
+    growth:     [62,64,65,67,68,70,72,74,75,77,79,82],
   },
   'EPFL': {
-    composite: [80,81,82,82,83,84,84,85,86,87,88,89],
-    output:    [78,79,80,80,81,82,82,83,84,85,86,90],  // papers=78, growth=15%
-    academic:  [82,83,83,84,85,85,86,87,88,89,90,92],  // citations=2450
-    domain:    [62,63,64,64,65,66,67,68,69,70,71,74],  // talent=12, ratio=21
-    trend:     [76,77,78,78,79,80,80,81,82,83,84,86],  // tech_leadership=88
-    collab:    [64,65,65,66,67,68,68,69,70,72,74,76],  // coop=28%, enterprise=35
-    community: [74,75,76,76,77,78,78,79,80,81,82,84],  // intl=62, network=90
+    composite:  [80,81,82,82,83,84,84,85,86,87,88,89],
+    output:     [78,79,80,80,81,82,82,83,84,85,86,90],
+    academic:   [82,83,83,84,85,85,86,87,88,89,90,92],
+    domain:     [62,63,64,64,65,66,67,68,69,70,71,74],
+    trend:      [76,77,78,78,79,80,80,81,82,83,84,86],
+    collab:     [64,65,65,66,67,68,68,69,70,72,74,76],
+    community:  [74,75,76,76,77,78,78,79,80,81,82,84],
+    innovation: [76,77,78,78,79,80,80,81,82,83,84,86],
+    network:    [64,65,65,66,67,68,68,69,70,72,74,76],
+    research:   [82,83,83,84,85,85,86,87,88,89,90,92],
+    talent:     [62,63,64,64,65,66,67,68,69,70,71,74],
+    impact:     [74,75,76,76,77,78,78,79,80,81,82,84],
+    growth:     [78,79,80,80,81,82,82,83,84,85,86,90],
   },
 };
 
@@ -931,7 +957,7 @@ export const Comparison: React.FC = () => {
           {/* Dimension selector — only for scholar/institution mode */}
           {(mode === 'scholar' || mode === 'institution') && (
             <div className="flex flex-wrap gap-2">
-              {DIM_CONFIG.map(dim => (
+              {(mode === 'institution' ? INST_DIM_CONFIG : DIM_CONFIG).map(dim => (
                 <button
                   key={dim.key}
                   onClick={() => setTrajDim(dim.key)}
