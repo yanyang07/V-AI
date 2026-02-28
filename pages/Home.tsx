@@ -500,7 +500,7 @@ export const Home: React.FC<HomeProps> = ({ setActiveTab, initialKeyword, onKeyw
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Main Intelligence Chart */}
         <div className="lg:col-span-8 space-y-8">
-          <div className="glass p-10 rounded-[40px] h-[550px] flex flex-col relative overflow-hidden" ref={chartRef}>
+          <div className="glass p-10 rounded-[40px] min-h-[420px] h-[550px] flex flex-col relative" ref={chartRef}>
             <div className="flex justify-between items-center mb-8 relative z-10">
               <h3 className="text-xl font-black text-[var(--text-base)] flex items-center gap-4 uppercase tracking-tight">
                 <div className="w-2 h-10 bg-blue-600 rounded-full"></div>

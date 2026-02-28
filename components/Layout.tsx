@@ -29,9 +29,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
   ];
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-[var(--bg-main)] text-[var(--text-base)] transition-colors duration-300">
+    <div className="h-screen flex flex-col lg:flex-row bg-[var(--bg-main)] text-[var(--text-base)] transition-colors duration-300 overflow-hidden">
       {/* Sidebar */}
-      <aside className="lg:w-72 w-full glass lg:h-screen sticky top-0 z-50 p-6 flex flex-col border-r border-[var(--border-color)]">
+      <aside className="lg:w-72 w-full glass lg:h-screen sticky top-0 z-50 p-6 flex flex-col border-r border-[var(--border-color)] shrink-0">
         <div className="mb-10 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-cyan-500 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.4)]">
@@ -87,7 +87,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto min-h-0 min-w-0">
         {children}
       </main>
     </div>

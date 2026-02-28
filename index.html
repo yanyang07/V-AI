@@ -53,19 +53,27 @@
 
       body {
         font-family: 'Space Grotesk', sans-serif;
-        background: var(--bg-main);
-        background-attachment: fixed;
+        background: transparent;
         color: var(--text-base);
-        transition: color 0.3s ease, background 0.3s ease;
+        transition: color 0.3s ease;
         overflow-x: hidden;
+      }
+
+      /* Fixed background using pseudo-element avoids backdrop-filter conflict */
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        background: var(--bg-main);
       }
 
       .mono { font-family: 'JetBrains Mono', monospace; }
 
       .glass {
         background: var(--bg-glass);
-        backdrop-filter: blur(25px);
-        -webkit-backdrop-filter: blur(25px);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         border: 1px solid var(--border-color);
         box-shadow: var(--card-shadow);
         transition: all 0.3s ease;
