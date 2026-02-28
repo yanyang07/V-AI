@@ -311,13 +311,12 @@ const SCHOLAR_TRAJ_SCORES: Record<string, number[]> = {
 type TrajDim = 'composite' | 'output' | 'academic' | 'domain' | 'trend' | 'collab' | 'community';
 
 export const DIM_CONFIG: { key: TrajDim; label: string; color: string; weight: string }[] = [
-  { key: 'composite', label: '综合',  color: '#06b6d4', weight: '100%' },
-  { key: 'output',    label: '产出',  color: '#8b5cf6', weight: '20%'  },
-  { key: 'academic',  label: '学术',  color: '#10b981', weight: '25%'  },
-  { key: 'domain',    label: '主导',  color: '#f59e0b', weight: '15%'  },
-  { key: 'trend',     label: '趋势',  color: '#ec4899', weight: '15%'  },
-  { key: 'collab',    label: '合作',  color: '#3b82f6', weight: '10%'  },
-  { key: 'community', label: '社区',  color: '#f97316', weight: '15%'  },
+  { key: 'composite', label: '综合',         color: '#06b6d4', weight: '100%' },
+  { key: 'output',    label: '产出力',       color: '#8b5cf6', weight: '20%'  },
+  { key: 'academic',  label: '学术影响力',   color: '#10b981', weight: '25%'  },
+  { key: 'domain',    label: '领域主导力',   color: '#f59e0b', weight: '15%'  },
+  { key: 'trend',     label: '趋势敏感',     color: '#ec4899', weight: '15%'  },
+  { key: 'collab',    label: '合作影响半径', color: '#3b82f6', weight: '10%'  },
 ];
 
 // Scholar 维度分解（4 时间点：2025-11 ~ 2026-02）
@@ -920,20 +919,13 @@ export const Comparison: React.FC = () => {
       <div className="glass p-12 rounded-[60px] border border-[var(--border-color)] h-[700px] flex flex-col">
         <div className="flex flex-col gap-6 mb-8">
           {/* Title row */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-5">
             <h3 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-5">
               <div className="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-500 dark:text-indigo-400 border border-indigo-500/20">
                 <i className="fa-solid fa-microchip text-2xl" />
               </div>
               Trajectory Convergence Matrix
             </h3>
-            <div className="px-4 py-2 bg-slate-100 dark:bg-white/5 rounded-xl border border-[var(--border-color)] text-[10px] text-[var(--text-dim)] font-black mono uppercase">
-              {mode === 'region'
-                ? 'Annual Output · Papers + News Signal (2020 – 2026)'
-                : trajDim === 'composite'
-                  ? 'Composite Influence Score · 产出 + 学术 + 主导 + 趋势 + 合作 + 社区'
-                  : `${DIM_CONFIG.find(d => d.key === trajDim)?.label} 维度轨迹`}
-            </div>
           </div>
 
           {/* Dimension selector — only for scholar/institution mode */}
